@@ -1,0 +1,498 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+    /* POS SEKOLAH ala Majoo: seluruh utilitas emerald-* dirender sebagai
+       teal agar konsisten dengan sidebar/topbar teal. */
+    --color-emerald-50: #f0fdfa;
+    --color-emerald-100: #ccfbf1;
+    --color-emerald-200: #99f6e4;
+    --color-emerald-300: #5eead4;
+    --color-emerald-400: #2dd4bf;
+    --color-emerald-500: #14b8a6;
+    --color-emerald-600: #14b8a6;
+    --color-emerald-700: #0d9488;
+    --color-emerald-800: #115e59;
+    --color-emerald-900: #134e4a;
+}
+
+@theme inline {
+    --font-sans:
+        Instrument Sans, ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar-background);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+        border-color: var(--color-gray-200, currentColor);
+    }
+}
+
+@layer utilities {
+    body,
+    html {
+        --font-sans:
+            'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+            'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+            'Noto Color Emoji';
+    }
+}
+
+:root {
+    --background: hsl(0 0% 100%);
+    --foreground: hsl(0 0% 3.9%);
+    --card: hsl(0 0% 100%);
+    --card-foreground: hsl(0 0% 3.9%);
+    --popover: hsl(0 0% 100%);
+    --popover-foreground: hsl(0 0% 3.9%);
+    --primary: hsl(173 80% 36%);
+    --primary-foreground: hsl(0 0% 100%);
+    --secondary: hsl(0 0% 92.1%);
+    --secondary-foreground: hsl(0 0% 9%);
+    --muted: hsl(0 0% 96.1%);
+    --muted-foreground: hsl(0 0% 45.1%);
+    --accent: hsl(0 0% 96.1%);
+    --accent-foreground: hsl(0 0% 9%);
+    --destructive: hsl(0 84.2% 60.2%);
+    --destructive-foreground: hsl(0 0% 98%);
+    --border: hsl(0 0% 92.8%);
+    --input: hsl(0 0% 89.8%);
+    --ring: hsl(173 80% 36%);
+    --chart-1: hsl(12 76% 61%);
+    --chart-2: hsl(173 58% 39%);
+    --chart-3: hsl(197 37% 24%);
+    --chart-4: hsl(43 74% 66%);
+    --chart-5: hsl(27 87% 67%);
+    --radius: 0.5rem;
+    --sidebar-background: hsl(173 82% 36%);
+    --sidebar-foreground: hsl(0 0% 100%);
+    --sidebar-primary: hsl(173 82% 28%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(173 82% 29%);
+    --sidebar-accent-foreground: hsl(0 0% 100%);
+    --sidebar-border: hsl(173 70% 42%);
+    --sidebar-ring: hsl(0 0% 100%);
+    --sidebar-accent-foreground: hsl(0 0% 30%);
+    --sidebar-border: hsl(0 0% 91%);
+    --sidebar-ring: hsl(217.2 91.2% 59.8%);
+    --sidebar: hsl(0 0% 98%);
+}
+
+.dark {
+    --background: hsl(0 0% 3.9%);
+    --foreground: hsl(0 0% 98%);
+    --card: hsl(0 0% 3.9%);
+    --card-foreground: hsl(0 0% 98%);
+    --popover: hsl(0 0% 3.9%);
+    --popover-foreground: hsl(0 0% 98%);
+    --primary: hsl(0 0% 98%);
+    --primary-foreground: hsl(0 0% 9%);
+    --secondary: hsl(0 0% 14.9%);
+    --secondary-foreground: hsl(0 0% 98%);
+    --muted: hsl(0 0% 16.08%);
+    --muted-foreground: hsl(0 0% 63.9%);
+    --accent: hsl(0 0% 14.9%);
+    --accent-foreground: hsl(0 0% 98%);
+    --destructive: hsl(0 84% 60%);
+    --destructive-foreground: hsl(0 0% 98%);
+    --border: hsl(0 0% 14.9%);
+    --input: hsl(0 0% 14.9%);
+    --ring: hsl(0 0% 83.1%);
+    --chart-1: hsl(220 70% 50%);
+    --chart-2: hsl(160 60% 45%);
+    --chart-3: hsl(30 80% 55%);
+    --chart-4: hsl(280 65% 60%);
+    --chart-5: hsl(340 75% 55%);
+    --sidebar-background: hsl(0 0% 7%);
+    --sidebar-foreground: hsl(0 0% 95.9%);
+    --sidebar-primary: hsl(360, 100%, 100%);
+    --sidebar-primary-foreground: hsl(0 0% 100%);
+    --sidebar-accent: hsl(0 0% 15.9%);
+    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+    --sidebar-border: hsl(0 0% 15.9%);
+    --sidebar-ring: hsl(217.2 91.2% 59.8%);
+    --sidebar: hsl(240 5.9% 10%);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+}
+
+/*
+ * Mode gelap untuk konten halaman.
+ * Halaman-halaman memakai utilitas terang eksplisit (bg-white, text-neutral-900,
+ * border-neutral-200, ...), sehingga perlu dipetakan ke warna gelap saat
+ * toggle gelap/terang aktif (.dark pada <html>). Ditaruh di luar @layer agar
+ * menang atas utilitas Tailwind. Berlaku untuk SEMUA halaman sekaligus.
+ */
+.dark {
+    color-scheme: dark;
+}
+
+/* Latar kartu / panel / modal / container */
+.dark .bg-\[\#f3f5f9\] {
+    background-color: #0a0a0a;
+}
+.dark .bg-white {
+    background-color: #171717;
+}
+.dark .bg-neutral-50 {
+    background-color: #1e1e1e;
+}
+.dark .bg-neutral-100 {
+    background-color: #262626;
+}
+.dark .bg-neutral-200 {
+    background-color: #333333;
+}
+.dark .bg-gray-50 {
+    background-color: #1f1f1f;
+}
+
+/* Form input, select, & textarea */
+.dark input,
+.dark select,
+.dark textarea {
+    color-scheme: dark;
+}
+.dark select option {
+    background-color: #1e1e1e;
+    color: #ededed;
+}
+
+/* Latar badge & alert */
+.dark .bg-green-50,
+.dark .bg-green-100 {
+    background-color: #052e16;
+}
+.dark .bg-red-50 {
+    background-color: #450a0a;
+}
+.dark .bg-amber-50,
+.dark .bg-amber-100 {
+    background-color: #451a03;
+}
+.dark .bg-blue-50 {
+    background-color: #172554;
+}
+.dark .bg-teal-50,
+.dark .bg-teal-100,
+.dark .bg-emerald-50,
+.dark .bg-emerald-100 {
+    background-color: #042f2e;
+}
+.dark .bg-sky-50,
+.dark .bg-sky-100 {
+    background-color: #082f49;
+}
+.dark .bg-violet-50,
+.dark .bg-violet-100 {
+    background-color: #2e1065;
+}
+
+/* Teks netral */
+.dark .text-neutral-900 {
+    color: #ededed;
+}
+.dark .text-neutral-800 {
+    color: #e5e5e5;
+}
+.dark .text-neutral-700 {
+    color: #d4d4d4;
+}
+.dark .text-neutral-600 {
+    color: #b3b3b3;
+}
+.dark .text-neutral-500 {
+    color: #9c9c9c;
+}
+.dark .text-neutral-400 {
+    color: #8f8f8f;
+}
+.dark .text-gray-800 {
+    color: #e5e5e5;
+}
+.dark .text-gray-700 {
+    color: #d4d4d4;
+}
+
+/* Teks aksen (emerald dipetakan ke teal oleh tema) */
+.dark .text-emerald-800,
+.dark .text-emerald-700,
+.dark .text-emerald-600,
+.dark .text-teal-800,
+.dark .text-teal-700,
+.dark .text-teal-600 {
+    color: #5eead4;
+}
+.dark .text-green-800,
+.dark .text-green-700,
+.dark .text-green-600 {
+    color: #86efac;
+}
+.dark .text-red-700,
+.dark .text-red-600 {
+    color: #fca5a5;
+}
+.dark .text-amber-800,
+.dark .text-amber-700,
+.dark .text-amber-600 {
+    color: #fcd34d;
+}
+.dark .text-blue-600 {
+    color: #93c5fd;
+}
+.dark .text-sky-700,
+.dark .text-sky-800 {
+    color: #7dd3fc;
+}
+.dark .text-violet-700,
+.dark .text-violet-800 {
+    color: #c4b5fd;
+}
+
+/* Garis batas */
+.dark .border-neutral-200,
+.dark .border-neutral-100,
+.dark .border-neutral-50 {
+    border-color: #2b2b2b;
+}
+.dark .border-gray-300 {
+    border-color: #3a3a3a;
+}
+.dark .border-green-200 {
+    border-color: #166534;
+}
+.dark .border-red-200 {
+    border-color: #7f1d1d;
+}
+.dark .border-teal-100,
+.dark .border-teal-200,
+.dark .border-emerald-100,
+.dark .border-emerald-200 {
+    border-color: #115e59;
+}
+.dark .border-sky-100,
+.dark .border-sky-200 {
+    border-color: #0c4a6e;
+}
+.dark .border-amber-100,
+.dark .border-amber-200 {
+    border-color: #78350f;
+}
+.dark .border-violet-100,
+.dark .border-violet-200 {
+    border-color: #4c1d95;
+}
+.dark .divide-neutral-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-neutral-50 > :not([hidden]) ~ :not([hidden]) {
+    border-color: #2b2b2b;
+}
+
+/* Hover */
+.dark .hover\:bg-neutral-50:hover {
+    background-color: #242424;
+}
+.dark .hover\:bg-neutral-100:hover {
+    background-color: #2e2e2e;
+}
+.dark .hover\:bg-teal-50:hover {
+    background-color: #0b2e2b;
+}
+.dark .hover\:bg-red-50:hover {
+    background-color: #4c1212;
+}
+.dark .hover\:bg-green-50:hover {
+    background-color: #0a3a1e;
+}
+.dark .hover\:bg-amber-50:hover {
+    background-color: #4d2405;
+}
+.dark .hover\:bg-blue-50:hover {
+    background-color: #1c2c5e;
+}
+.dark .hover\:text-emerald-700:hover {
+    color: #2dd4bf;
+}
+
+/* Varian putih transparan (glassmorphism Kasir, bottom nav, sticky bar).
+   Selektor exact .bg-white di atas tidak menangkap bg-white/80 dkk,
+   sehingga panel-panel ini tetap putih menyilaukan saat mode gelap. */
+.dark .bg-white\/95 {
+    background-color: rgb(23 23 23 / 0.95);
+}
+.dark .bg-white\/90 {
+    background-color: rgb(23 23 23 / 0.9);
+}
+.dark .bg-white\/80 {
+    background-color: rgb(23 23 23 / 0.8);
+}
+.dark .border-white\/60 {
+    border-color: #333333;
+}
+.dark .hover\:bg-white\/90:hover {
+    background-color: rgb(38 38 38 / 0.9);
+}
+
+/* Garis netral-300 (checkbox, garis putus-putus non-struk) */
+.dark .border-neutral-300 {
+    border-color: #404040;
+}
+
+/* Label sumbu grafik Dashboard agar kontras di latar gelap */
+.dark .fill-neutral-400 {
+    fill: #a8a8a8;
+}
+
+/* Ring titik notifikasi / badge mengikuti latar gelap */
+.dark .ring-white {
+    --tw-ring-color: #171717;
+}
+
+/* Gradient dan shadow PosLogin di mode gelap */
+.dark .from-emerald-50 {
+    --tw-gradient-from: #081a17 var(--tw-gradient-from-position);
+}
+.dark .via-white {
+    --tw-gradient-via: #141414 var(--tw-gradient-via-position);
+}
+.dark .to-teal-50 {
+    --tw-gradient-to: #081e1a var(--tw-gradient-to-position);
+}
+.dark .shadow-emerald-100,
+.dark .shadow-emerald-200 {
+    --tw-shadow-color: rgba(0, 0, 0, 0.4);
+}
+
+/* SVG Chart di Dashboard mode gelap */
+.dark .stroke-neutral-100 {
+    stroke: #2b2b2b;
+}
+.dark circle[stroke="#fff"] {
+    stroke: #171717;
+}
+
+/* Struk kasir tetap putih agar terbaca & hemat tinta saat dicetak */
+.dark #struk-print,
+.dark #struk-print * {
+    background-color: #ffffff;
+    color: #171717;
+    border-color: #d4d4d4;
+}
+
+/* Cetak struk thermal 58mm / 80mm: hanya #struk-print yang keluar */
+@media print {
+    @page {
+        size: 80mm auto;
+        margin: 0 2mm 4mm 2mm;
+    }
+    html,
+    body {
+        background: #fff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    body * {
+        visibility: hidden !important;
+    }
+    #struk-print,
+    #struk-print * {
+        visibility: visible !important;
+    }
+    #struk-print {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 72mm !important;
+        max-width: 72mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: #fff !important;
+        color: #000 !important;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+        font-size: 11px !important;
+        line-height: 1.45 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+    #struk-print p,
+    #struk-print div,
+    #struk-print span {
+        color: #000 !important;
+        overflow-wrap: anywhere;
+    }
+}
