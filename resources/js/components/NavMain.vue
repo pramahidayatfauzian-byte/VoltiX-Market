@@ -48,7 +48,7 @@ function isActive(href: NonNullable<NavItem['href']>): boolean {
                     as-child
                     :is-active="item.isActive ?? isActive(item.href)"
                     :tooltip="item.title"
-                    class="rounded-md px-3 py-2.5 text-white/90 hover:bg-white/10 hover:text-white data-[active=true]:bg-black/15 data-[active=true]:font-semibold data-[active=true]:text-white data-[active=true]:shadow-[inset_-4px_0_0_0_var(--color-yellow-400)]"
+                    class="nav-anim rounded-md px-3 py-2.5 text-white/90 hover:bg-white/10 hover:text-white data-[active=true]:bg-black/15 data-[active=true]:font-semibold data-[active=true]:text-white data-[active=true]:shadow-[inset_-4px_0_0_0_var(--color-yellow-400)]"
                 >
                     <Link :href="item.href">
                         <component :is="item.icon" />
@@ -59,3 +59,30 @@ function isActive(href: NonNullable<NavItem['href']>): boolean {
         </SidebarMenu>
     </SidebarGroup>
 </template>
+
+<style scoped>
+.nav-anim {
+    transition:
+        transform 0.2s ease,
+        background-color 0.2s ease,
+        box-shadow 0.3s ease;
+}
+.nav-anim:hover {
+    transform: translateX(4px);
+}
+.nav-anim svg {
+    transition: transform 0.2s ease;
+}
+.nav-anim:hover svg {
+    transform: scale(1.18) rotate(-6deg);
+}
+@media (prefers-reduced-motion: reduce) {
+    .nav-anim,
+    .nav-anim svg {
+        transition: none;
+    }
+    .nav-anim:hover {
+        transform: none;
+    }
+}
+</style>
