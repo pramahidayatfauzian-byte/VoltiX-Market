@@ -48,7 +48,7 @@ function isActive(href: NonNullable<NavItem['href']>): boolean {
                     as-child
                     :is-active="item.isActive ?? isActive(item.href)"
                     :tooltip="item.title"
-                    class="nav-anim rounded-md px-3 py-2.5 text-white/90 hover:bg-white/10 hover:text-white data-[active=true]:bg-black/15 data-[active=true]:font-semibold data-[active=true]:text-white data-[active=true]:shadow-[inset_-4px_0_0_0_var(--color-yellow-400)]"
+                    class="nav-anim rounded-md px-3 py-2.5 text-white/90 hover:bg-white/10 hover:text-white data-[active=true]:bg-white/15 data-[active=true]:font-semibold data-[active=true]:text-white data-[active=true]:shadow-[inset_3px_0_0_0_var(--color-emerald-300),0_0_16px_rgba(45,212,191,0.25)]"
                 >
                     <Link :href="item.href">
                         <component :is="item.icon" />

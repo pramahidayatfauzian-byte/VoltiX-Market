@@ -2,7 +2,6 @@
 import { usePage } from '@inertiajs/vue3';
 import {
     BarChart3,
-    HandCoins,
     History,
     LayoutDashboard,
     ReceiptText,
@@ -37,6 +36,8 @@ const sekolahLogo = computed(
 
 const role = computed(() => (page.props.auth.user?.role as string | undefined) ?? '');
 const isKasir = computed(() => role.value === 'kasir');
+// Super admin & developer tidak menyentuh penjualan: menu terbatas.
+const isTanpaKasir = computed(() => ['developer', 'super admin'].includes(role.value));
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -44,7 +45,6 @@ const navGroups = computed<NavGroup[]>(() => {
     const operasional: NavItem[] = [
         { title: 'Dashboard', href: dashboard(), icon: LayoutDashboard },
         { title: 'Kasir / Transaksi', href: '/kasir', icon: ReceiptText },
-        { title: 'Piutang', href: '/piutang', icon: HandCoins },
         { title: 'Retur', href: '/retur', icon: RotateCcw },
         { title: 'Laporan', href: '/laporan', icon: BarChart3 },
     ];
@@ -61,12 +61,15 @@ const navGroups = computed<NavGroup[]>(() => {
     ];
 
     const izinKasir = new Set(['Dashboard', 'Kasir / Transaksi', 'Produk', 'Pelanggan']);
+    const menuTanpaKasir = new Set(['Dashboard', 'User', 'Pengaturan']);
     // Semua role kecuali kasir tampil semua menu (termasuk User & Pengaturan untuk admin).
     // Pembatasan aksi dilakukan di backend + tombol frontend:
     // - Admin: User read-only (tanpa edit/reset), Pengaturan 403.
     // - Kasir: hanya menu terbatas.
+    // - Developer & super admin: tanpa menu penjualan.
 
     const saring = (items: NavItem[]) => {
+        if (isTanpaKasir.value) return items.filter((m) => menuTanpaKasir.has(m.title));
         if (isKasir.value) return items.filter((m) => izinKasir.has(m.title));
         return items;
     };

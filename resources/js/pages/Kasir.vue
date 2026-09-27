@@ -91,6 +91,7 @@ const props = defineProps<{
     kelompok_pelanggan: Kelompok[];
     kategori_list?: Kategori[];
     produk_list?: Produk[];
+    qris_url?: string | null;
 }>();
 
 const page = usePage();
@@ -194,6 +195,27 @@ function resetFilterProduk() {
     } else {
         cariProduk('', null);
     }
+}
+
+// Muat ulang katalog setelah transaksi agar stok langsung berkurang tanpa
+// refresh halaman; selaraskan juga stok item di keranjang aktif & terparkir.
+async function segarkanStokKatalog() {
+    await cariProduk(produkKeyword.value, kategoriDipilih.value);
+    const stokBaru = new Map(produkHasil.value.map((p) => [p.id_barang, p.stok]));
+    const selaraskan = (items: CartItem[]) => {
+        for (const it of items) {
+            const st = stokBaru.get(it.id_barang);
+            if (st === undefined) continue;
+            it.stok = st;
+            if (st >= 1 && it.qty > st) {
+                it.qty = st;
+                cartError.value = `Stok ${it.nama} tersisa ${st}, qty disesuaikan.`;
+            }
+        }
+    };
+    selaraskan(cart.value);
+    for (const s of slots.value) selaraskan(s.cart);
+    simpanSlotsKeStorage();
 }
 
 function qtyDiKeranjang(id_barang: number): number {
@@ -397,10 +419,17 @@ const total = computed(() => subtotal.value - totalDiskon.value);
 const pelangganKeyword = ref('');
 const pelangganHasil = ref<PelangganOpt[]>([]);
 const pelangganDipilih = ref<PelangganOpt | null>(null);
+const pelangganLoading = ref(false);
 let pelangganTimer: ReturnType<typeof setTimeout> | undefined;
 
 watch(pelangganKeyword, (v) => {
     clearTimeout(pelangganTimer);
+    if (!v.trim()) {
+        pelangganHasil.value = [];
+        pelangganLoading.value = false;
+        return;
+    }
+    pelangganLoading.value = true;
     pelangganTimer = setTimeout(() => cariPelanggan(v), 300);
 });
 
@@ -414,6 +443,8 @@ async function cariPelanggan(keyword: string) {
         pelangganHasil.value = j.data ?? [];
     } catch {
         pelangganHasil.value = [];
+    } finally {
+        pelangganLoading.value = false;
     }
 }
 
@@ -421,6 +452,32 @@ function pilihPelanggan(p: PelangganOpt) {
     pelangganDipilih.value = p;
     pelangganKeyword.value = '';
     pelangganHasil.value = [];
+    pelangganLoading.value = false;
+}
+
+function bersihkanCariPelanggan() {
+    pelangganKeyword.value = '';
+    pelangganHasil.value = [];
+    pelangganLoading.value = false;
+}
+
+// Dropdown terbuka → angkat seluruh kartu pelanggan di atas kartu bayar /
+// bar menempel. Perlu di level kartu karena backdrop-blur membuat tiap kartu
+// menjadi stacking context sendiri (z-index dropdown saja tidak cukup).
+const dropdownPelangganTerbuka = computed(
+    () => !pelangganDipilih.value && (pelangganLoading.value || pelangganKeyword.value.trim() !== ''),
+);
+
+// Saat input disentuh di HP, gulir kartu ke tengah layar agar dropdown
+// tidak tertutup bar Bayar menempel di bawah.
+function pelangganKeAtas() {
+    requestAnimationFrame(() => {
+        (document.activeElement as HTMLElement | null)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+}
+
+function inisialPelanggan(nama: string | null): string {
+    return (nama ?? '?').trim().charAt(0).toUpperCase() || '?';
 }
 
 // ---------- Pembayaran ----------
@@ -434,6 +491,17 @@ const bayar = reactive({
 });
 const processing = ref(false);
 
+// Logo bank inline-SVG (tajam di semua layar, tanpa file eksternal).
+const logoBank: Record<string, string> = {
+    BCA: `<svg viewBox="0 0 64 36" class="h-8 w-full" role="img" aria-label="BCA"><rect width="64" height="36" rx="7" fill="#1e40af"/><text x="32" y="23.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="800" fill="#ffffff" letter-spacing="0.5">BCA</text><rect x="14" y="27" width="36" height="2.4" rx="1.2" fill="#93c5fd"/></svg>`,
+    BRI: `<svg viewBox="0 0 64 36" class="h-8 w-full" role="img" aria-label="BRI"><rect width="64" height="36" rx="7" fill="#00529c"/><text x="32" y="22" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="800" fill="#ffffff" letter-spacing="1">BRI</text><path d="M12 27 Q32 31 52 25" stroke="#e30613" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>`,
+    Mandiri: `<svg viewBox="0 0 64 36" class="h-8 w-full" role="img" aria-label="Mandiri"><rect width="64" height="36" rx="7" fill="#003d79"/><text x="32" y="21.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="12.5" font-weight="800" fill="#ffffff">mandiri</text><path d="M14 27 Q24 23 32 27 T50 26" stroke="#ffd200" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>`,
+    BNI: `<svg viewBox="0 0 64 36" class="h-8 w-full" role="img" aria-label="BNI"><rect width="64" height="36" rx="7" fill="#f26522"/><text x="30" y="23.5" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="800" fill="#ffffff" letter-spacing="1">BNI</text><circle cx="50" cy="12" r="3" fill="#d42e12"/></svg>`,
+};
+// Bank penerbit kartu debit.
+const bankDipilih = ref('');
+const daftarBank = ['BCA', 'BRI', 'Mandiri', 'BNI'];
+
 function bukaBayar() {
     if (cart.value.length === 0) {
         cartError.value = 'Keranjang masih kosong.';
@@ -441,6 +509,7 @@ function bukaBayar() {
     }
     cartError.value = '';
     bayar.total_bayar = total.value;
+    bankDipilih.value = '';
     showBayar.value = true;
 }
 
@@ -537,7 +606,7 @@ function prosesBayar() {
                 diskon_nilai: c.diskon_nilai || 0,
             })),
             jenis_transaksi: bayar.jenis_transaksi,
-            cara_bayar: bayar.cara_bayar,
+            cara_bayar: bayar.cara_bayar === 'debit' && bankDipilih.value ? `debit ${bankDipilih.value}` : bayar.cara_bayar,
             total_bayar: bayar.total_bayar,
             status_pembayaran: bayar.status_pembayaran,
             note: bayar.note || null,
@@ -548,6 +617,7 @@ function prosesBayar() {
                 triggerConfetti();
                 showSuccessAnimation.value = true;
                 bersihkan();
+                void segarkanStokKatalog();
             },
             onFinish: () => {
                 processing.value = false;
@@ -2188,34 +2258,73 @@ function cetakStruk() {
                 </div>
 
                 <!-- PELANGGAN -->
-                <div class="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.05)] backdrop-blur-xl">
+                <div
+                    class="rounded-2xl border border-white/60 bg-white/80 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.05)] backdrop-blur-xl"
+                    :class="dropdownPelangganTerbuka ? 'relative z-50' : ''"
+                >
                     <h2 class="flex items-center gap-2 text-sm font-bold text-emerald-800">
                         <UserIcon class="h-4 w-4" /> Pelanggan (Opsional)
                     </h2>
                     <div v-if="!pelangganDipilih" class="relative mt-2">
                         <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                        <Input v-model="pelangganKeyword" placeholder="Cari pelanggan..." class="pl-9" autocomplete="off" />
-                        <div v-if="pelangganHasil.length > 0" class="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
+                        <Input
+                            v-model="pelangganKeyword"
+                            placeholder="Cari nama / telepon..."
+                            class="pr-9 pl-9"
+                            autocomplete="off"
+                            @keydown.escape="bersihkanCariPelanggan()"
+                            @focus="pelangganKeAtas()"
+                        />
+                        <span v-if="pelangganLoading" class="absolute top-1/2 right-3 -translate-y-1/2">
+                            <Loader2 class="h-4 w-4 animate-spin text-emerald-600" />
+                        </span>
+                        <button
+                            v-else-if="pelangganKeyword"
+                            type="button"
+                            class="absolute top-1/2 right-2.5 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+                            aria-label="Bersihkan pencarian"
+                            @click="bersihkanCariPelanggan()"
+                        >
+                            <X class="h-3.5 w-3.5" />
+                        </button>
+                        <div v-if="pelangganLoading" class="absolute bottom-full z-40 mb-1 w-full rounded-lg border border-neutral-200 bg-white px-3 py-3 text-center text-xs text-neutral-400 shadow-lg lg:top-full lg:bottom-auto lg:mt-1 lg:mb-0">
+                            Mencari pelanggan...
+                        </div>
+                        <div v-else-if="pelangganKeyword.trim() && pelangganHasil.length === 0" class="absolute bottom-full z-40 mb-1 w-full rounded-lg border border-neutral-200 bg-white px-3 py-3 text-center text-xs text-neutral-400 shadow-lg lg:top-full lg:bottom-auto lg:mt-1 lg:mb-0">
+                            Tidak ada pelanggan yang cocok.
+                        </div>
+                        <div v-else-if="pelangganHasil.length > 0" class="absolute bottom-full z-40 mb-1 max-h-48 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white py-1 shadow-lg lg:top-full lg:bottom-auto lg:mt-1 lg:mb-0 lg:max-h-64">
                             <button
                                 v-for="p in pelangganHasil"
                                 :key="p.id_pelanggan"
                                 type="button"
-                                class="block w-full px-3 py-2 text-left text-sm hover:bg-neutral-50"
+                                class="flex min-h-14 w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition hover:bg-emerald-50"
                                 @click="pilihPelanggan(p)"
                             >
-                                <span class="block font-medium text-neutral-900">{{ p.nama_pelanggan }}</span>
-                                <span class="block text-xs text-neutral-400">{{ p.telepon ?? '-' }}</span>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-sm font-bold text-white">
+                                    {{ inisialPelanggan(p.nama_pelanggan) }}
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block truncate font-semibold text-neutral-900">{{ p.nama_pelanggan }}</span>
+                                    <span class="block truncate text-xs text-neutral-400">{{ p.telepon ?? '-' }}<span v-if="p.kelompok?.nama_kelompok"> · {{ p.kelompok.nama_kelompok }}</span></span>
+                                </span>
                             </button>
                         </div>
                     </div>
-                    <div v-else class="mt-2 rounded-lg bg-neutral-50 p-3">
-                        <div class="flex items-start justify-between gap-2">
-                            <div class="min-w-0 text-sm">
+                    <div v-else class="mt-2 rounded-xl border border-emerald-100 bg-emerald-50/60 p-3">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-base font-bold text-white">
+                                {{ inisialPelanggan(pelangganDipilih.nama_pelanggan) }}
+                            </span>
+                            <div class="min-w-0 flex-1 text-sm">
                                 <p class="truncate font-semibold text-neutral-900">{{ pelangganDipilih.nama_pelanggan }}</p>
-                                <p class="text-neutral-500">{{ pelangganDipilih.telepon ?? '-' }}</p>
-                                <p class="mt-1 text-xs text-neutral-400">{{ pelangganDipilih.alamat ?? '-' }}</p>
+                                <p class="truncate text-xs text-neutral-500">{{ pelangganDipilih.telepon ?? '-' }}</p>
+                                <p class="mt-0.5 flex items-center gap-1.5">
+                                    <span v-if="pelangganDipilih.kelompok?.nama_kelompok" class="rounded-full bg-emerald-100 px-2 py-px text-[11px] font-semibold text-emerald-700">{{ pelangganDipilih.kelompok.nama_kelompok }}</span>
+                                    <span class="truncate text-[11px] text-neutral-400">{{ pelangganDipilih.alamat ?? '-' }}</span>
+                                </p>
                             </div>
-                            <button type="button" class="text-neutral-400 hover:text-emerald-700" @click="pelangganDipilih = null">
+                            <button type="button" class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-400 transition hover:bg-white hover:text-red-600" aria-label="Hapus pelanggan" title="Hapus pelanggan" @click="pelangganDipilih = null">
                                 <X class="h-4 w-4" />
                             </button>
                         </div>
@@ -2343,13 +2452,40 @@ function cetakStruk() {
                 </div>
                 <div>
                     <Label>Cara Bayar</Label>
-                    <select v-model="bayar.cara_bayar" class="mt-1.5 w-full h-9 rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20">
+                    <select v-model="bayar.cara_bayar" class="mt-1.5 w-full h-9 rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20" @change="bankDipilih = ''">
                         <option value="cash">Cash</option>
-                        <option value="transfer">Transfer</option>
                         <option value="qris">QRIS</option>
                         <option value="debit">Debit</option>
                     </select>
                 </div>
+            </div>
+
+            <!-- Panel QRIS: logo + QR merchant -->
+            <div v-if="bayar.cara_bayar === 'qris'" class="mt-3 rounded-xl border border-red-100 bg-red-50/50 p-3 text-center">
+                <span class="inline-block rounded-md bg-white px-3 py-1 text-lg font-black tracking-tight shadow-sm" style="color: #e01e26; font-style: italic;">QRIS</span>
+                <p class="mt-1 text-[11px] font-medium text-neutral-500">QR Indonesia Standard</p>
+                <img v-if="qris_url" :src="qris_url" alt="QRIS Merchant" class="mx-auto mt-2 h-44 w-44 rounded-lg border border-neutral-200 bg-white object-contain p-1" />
+                <p v-else class="mx-auto mt-2 max-w-55 rounded-lg bg-white px-3 py-3 text-xs text-neutral-400">Belum ada gambar QRIS. Upload di menu Pengaturan → Profil Sekolah.</p>
+                <p class="mt-2 text-sm font-bold text-neutral-900">{{ formatRp(total) }}</p>
+            </div>
+
+            <!-- Panel debit: pilih bank -->
+            <div v-if="bayar.cara_bayar === 'debit'" class="mt-3 rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+                <p class="text-xs font-semibold text-neutral-500">Bank penerbit kartu</p>
+                <div class="mt-2 grid grid-cols-4 gap-2">
+                    <button
+                        v-for="kode in daftarBank"
+                        :key="kode"
+                        type="button"
+                        class="flex items-center justify-center rounded-lg border bg-white p-1 transition"
+                        :class="bankDipilih === kode ? 'border-emerald-500 opacity-100 ring-2 ring-emerald-500 ring-offset-1' : 'border-neutral-200 opacity-55 hover:opacity-100'"
+                        :title="kode"
+                        @click="bankDipilih = bankDipilih === kode ? '' : kode"
+                        v-html="logoBank[kode]"
+                    >
+                    </button>
+                </div>
+                <p v-if="bankDipilih" class="mt-2 text-xs text-neutral-500">Tersimpan sebagai: <span class="font-semibold text-neutral-800">debit {{ bankDipilih }}</span></p>
             </div>
 
             <div class="mt-3">

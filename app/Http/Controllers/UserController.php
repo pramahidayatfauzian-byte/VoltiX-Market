@@ -106,8 +106,15 @@ class UserController extends Controller
         [$aktifId, $semua] = Tenant::resolve($request);
 
         $sekolahId = $isDeveloper
-            ? (int) ($request->input('id_sekolah') ?? $aktifId ?? $me->id_sekolah)
+            ? (int) (($request->input('id_sekolah') !== null && $request->input('id_sekolah') !== '')
+                ? $request->input('id_sekolah')
+                : ($aktifId ?? $me->id_sekolah))
             : (int) $me->id_sekolah;
+
+        // Cegah id_sekolah 0 (string kosong di-cast) yang memicu FK 1452.
+        if ($sekolahId <= 0) {
+            return back()->withErrors(['id_sekolah' => 'Pilih sekolah untuk user baru ini.'])->withInput();
+        }
 
         $v = $request->validate([
             'id_sekolah' => ['nullable', 'integer', 'exists:tb_sekolah,id_sekolah'],

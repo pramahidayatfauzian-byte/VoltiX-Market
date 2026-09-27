@@ -116,10 +116,12 @@ class SupplierController extends Controller
             ->tenant($request->user()->id_sekolah, $this->isDeveloper($request))
             ->findOrFail($id);
 
-        if (Pembelian::where('id_supplier', $id)->valid()->exists()) {
+        // Cek SEMUA baris (termasuk yang terhapus-lembut) karena FK RESTRICT
+        // database tetap menahan walau datanya sudah dihapus lembut.
+        if (Pembelian::where('id_supplier', $id)->exists()) {
             return back()->withErrors(['supplier' => 'Supplier masih dipakai pembelian, tidak bisa dihapus.']);
         }
-        if (\App\Models\Barang::where('id_supplier', $id)->valid()->exists()) {
+        if (\App\Models\Barang::where('id_supplier', $id)->exists()) {
             return back()->withErrors(['supplier' => 'Supplier masih dipakai produk, tidak bisa dihapus.']);
         }
 

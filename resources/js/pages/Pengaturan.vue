@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { ArrowRight, DatabaseBackup, KeyRound, LayoutGrid, School, ScrollText, ShieldCheck, User, Users } from '@lucide/vue';
+import { ArrowRight, DatabaseBackup, KeyRound, LayoutGrid, Plus, School, ScrollText, ShieldCheck, User, Users, X } from '@lucide/vue';
 import { computed, reactive, ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ const props = defineProps<{
         alamat_sekolah: string | null;
         website: string | null;
         logo_url: string | null;
+        qris_url: string | null;
     };
     me: { nama_lengkap: string | null; username: string | null };
 }>();
@@ -38,6 +39,9 @@ const page = usePage();
 const flash = computed(() => page.props.flash as Record<string, unknown>);
 const formErrors = computed(() => (page.props.errors ?? {}) as Record<string, string>);
 const successMsg = computed(() => flash.value.success as string | undefined);
+type AkunBaru = { sekolah: string; password: string; akun: Array<{ role: string; username: string }> };
+const akunBaru = computed(() => flash.value.akun_baru as AkunBaru | undefined);
+const akunDitutup = ref(false);
 
 const pilihSekolah = ref(props.target.id_sekolah);
 function gantiTarget() {
@@ -52,6 +56,9 @@ const sekForm = reactive({
 const logoFile = ref<File | null>(null);
 const logoPreview = ref<string | null>(props.target.logo_url);
 const logoError = ref<string>('');
+const qrisFile = ref<File | null>(null);
+const qrisPreview = ref<string | null>(props.target.qris_url);
+const qrisError = ref<string>('');
 const menyimpan = ref(false);
 const mengunduhBackup = ref(false);
 
@@ -86,20 +93,24 @@ function pilihLogo(e: Event) {
 function simpanSekolah() {
     if (menyimpan.value) return;
     logoError.value = '';
+    qrisError.value = '';
     const fd = new FormData();
     fd.append('nama_sekolah', sekForm.nama_sekolah);
     fd.append('alamat_sekolah', sekForm.alamat_sekolah ?? '');
     fd.append('website', sekForm.website ?? '');
     if (logoFile.value) fd.append('logo', logoFile.value);
+    if (qrisFile.value) fd.append('qris_image', qrisFile.value);
     menyimpan.value = true;
     router.post(`/pengaturan/sekolah/${props.target.id_sekolah}`, fd, {
         preserveScroll: true,
         forceFormData: true,
         onSuccess: () => {
             logoFile.value = null;
+            qrisFile.value = null;
         },
         onError: (errs) => {
             if (errs.logo) logoError.value = String(errs.logo);
+            if (errs.qris_image) qrisError.value = String(errs.qris_image);
         },
         onFinish: () => {
             menyimpan.value = false;
@@ -107,11 +118,110 @@ function simpanSekolah() {
     });
 }
 
+function pilihQris(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    qrisError.value = '';
+    if (!file) {
+        qrisFile.value = null;
+        qrisPreview.value = props.target.qris_url;
+        return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        qrisError.value = 'Format gambar harus jpg, png, atau webp.';
+        input.value = '';
+        qrisFile.value = null;
+        qrisPreview.value = props.target.qris_url;
+        return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+        qrisError.value = 'Ukuran gambar maksimal 2MB.';
+        input.value = '';
+        qrisFile.value = null;
+        qrisPreview.value = props.target.qris_url;
+        return;
+    }
+    qrisFile.value = file;
+    qrisPreview.value = URL.createObjectURL(file);
+}
+
 function unduhBackup() {
     if (mengunduhBackup.value) return;
     mengunduhBackup.value = true;
     window.location.href = '/pengaturan/backup';
     setTimeout(() => { mengunduhBackup.value = false; }, 3000);
+}
+
+// ---------- Tambah sekolah + 3 akun (developer) ----------
+const showTambahSekolah = ref(false);
+const tsForm = reactive({ kode_sekolah: '', nama_sekolah: '', alamat_sekolah: '', website: '' });
+const tsLogoFile = ref<File | null>(null);
+const tsLogoPreview = ref<string | null>(null);
+const tsLogoError = ref('');
+const menyimpanTs = ref(false);
+
+function bukaTambahSekolah() {
+    Object.assign(tsForm, { kode_sekolah: '', nama_sekolah: '', alamat_sekolah: '', website: '' });
+    tsLogoFile.value = null;
+    tsLogoPreview.value = null;
+    tsLogoError.value = '';
+    akunDitutup.value = true;
+    showTambahSekolah.value = true;
+}
+
+function pilihLogoTs(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    tsLogoError.value = '';
+    if (!file) {
+        tsLogoFile.value = null;
+        tsLogoPreview.value = null;
+        return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        tsLogoError.value = 'Format logo harus jpg, png, atau webp.';
+        input.value = '';
+        tsLogoFile.value = null;
+        tsLogoPreview.value = null;
+        return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+        tsLogoError.value = 'Ukuran logo maksimal 2MB.';
+        input.value = '';
+        tsLogoFile.value = null;
+        tsLogoPreview.value = null;
+        return;
+    }
+    tsLogoFile.value = file;
+    tsLogoPreview.value = URL.createObjectURL(file);
+}
+
+function simpanSekolahBaru() {
+    if (menyimpanTs.value) return;
+    tsLogoError.value = '';
+    const fd = new FormData();
+    fd.append('kode_sekolah', tsForm.kode_sekolah);
+    fd.append('nama_sekolah', tsForm.nama_sekolah);
+    fd.append('alamat_sekolah', tsForm.alamat_sekolah ?? '');
+    fd.append('website', tsForm.website ?? '');
+    if (tsLogoFile.value) fd.append('logo', tsLogoFile.value);
+    menyimpanTs.value = true;
+    router.post('/pengaturan/sekolah', fd, {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => {
+            showTambahSekolah.value = false;
+            tsLogoFile.value = null;
+            tsLogoPreview.value = null;
+            akunDitutup.value = false;
+        },
+        onError: (errs) => {
+            if (errs.logo) tsLogoError.value = String(errs.logo);
+        },
+        onFinish: () => {
+            menyimpanTs.value = false;
+        },
+    });
 }
 </script>
 
@@ -168,6 +278,14 @@ function unduhBackup() {
                             <input type="file" accept="image/jpeg,image/png,image/webp" class="w-full min-w-0 text-sm text-neutral-500 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-emerald-700" @change="pilihLogo" />
                         </div>
                         <InputError :message="logoError || formErrors.logo" />
+                    </div>
+                    <div>
+                        <Label>Gambar QRIS Merchant (untuk pembayaran QRIS di kasir)</Label>
+                        <div class="mt-1.5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <img v-if="qrisPreview" :src="qrisPreview" alt="QRIS" class="h-20 w-20 shrink-0 rounded-lg border border-neutral-200 object-cover" />
+                            <input type="file" accept="image/jpeg,image/png,image/webp" class="w-full min-w-0 text-sm text-neutral-500 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-emerald-700" @change="pilihQris" />
+                        </div>
+                        <InputError :message="qrisError || formErrors.qris_image" />
                     </div>
                 </div>
                 <Button type="button" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700" :disabled="menyimpan" @click="simpanSekolah()">{{ menyimpan ? 'Menyimpan...' : 'Simpan Profil' }}</Button>
@@ -269,6 +387,72 @@ function unduhBackup() {
                     </Button>
                 </div>
             </div>
+
+            <!-- Tambah sekolah + akun (developer) -->
+            <div v-if="is_super_admin" class="mx-auto w-full max-w-2xl rounded-xl border border-neutral-200 bg-white p-4 text-center shadow-sm xl:col-span-3">
+                <h2 class="flex items-center justify-center gap-2 text-sm font-bold text-emerald-800">
+                    <School class="h-4 w-4" /> Tambah Sekolah
+                </h2>
+                <div class="mt-2 flex flex-col items-center gap-3">
+                    <p class="max-w-xl text-sm text-neutral-500">
+                        Buat sekolah baru (mis. SMA5) — akun <span class="font-semibold text-neutral-700">kasir, admin & super admin</span> langsung dibuat otomatis.
+                    </p>
+                    <Button type="button" class="h-11 w-full bg-emerald-600 hover:bg-emerald-700 sm:w-auto sm:px-8" @click="bukaTambahSekolah()">
+                        <Plus class="mr-1 h-4 w-4" /> Tambah Sekolah
+                    </Button>
+                </div>
+                <div v-if="akunBaru && !akunDitutup" class="mx-auto mt-3 max-w-xl rounded-lg border border-green-200 bg-green-50 p-3 text-left text-sm">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-bold text-green-800">Akun {{ akunBaru.sekolah }} berhasil dibuat — catat passwordnya!</p>
+                        <button type="button" class="text-green-400 hover:text-green-700" aria-label="Tutup" @click="akunDitutup = true"><X class="h-4 w-4" /></button>
+                    </div>
+                    <ul class="mt-2 space-y-1 font-mono text-xs text-green-900">
+                        <li v-for="a in akunBaru.akun" :key="a.username">{{ a.role }}: {{ a.username }} / {{ akunBaru.password }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal tambah sekolah -->
+    <div v-if="showTambahSekolah" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4" @click.self="showTambahSekolah = false">
+        <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-emerald-800">Tambah Sekolah</h3>
+                <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 hover:text-emerald-700" aria-label="Tutup" @click="showTambahSekolah = false"><X class="h-5 w-5" /></button>
+            </div>
+            <div class="mt-4 space-y-3">
+                <div>
+                    <Label>Kode Sekolah</Label>
+                    <Input v-model="tsForm.kode_sekolah" class="mt-1.5 font-mono uppercase" placeholder="cth: SMA5" autocomplete="off" />
+                    <InputError :message="formErrors.kode_sekolah" />
+                </div>
+                <div>
+                    <Label>Nama Sekolah</Label>
+                    <Input v-model="tsForm.nama_sekolah" class="mt-1.5" placeholder="cth: SMA Negeri 5" />
+                    <InputError :message="formErrors.nama_sekolah" />
+                </div>
+                <div>
+                    <Label>Alamat</Label>
+                    <Input v-model="tsForm.alamat_sekolah" class="mt-1.5" placeholder="Alamat sekolah" />
+                    <InputError :message="formErrors.alamat_sekolah" />
+                </div>
+                <div>
+                    <Label>Website</Label>
+                    <Input v-model="tsForm.website" class="mt-1.5" placeholder="https://..." />
+                    <InputError :message="formErrors.website" />
+                </div>
+                <div>
+                    <Label>Logo Sekolah (jpg/png/webp, maks 2MB)</Label>
+                    <div class="mt-1.5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <img v-if="tsLogoPreview" :src="tsLogoPreview" alt="Logo" class="h-16 w-16 shrink-0 rounded-lg border border-neutral-200 object-cover" />
+                        <input type="file" accept="image/jpeg,image/png,image/webp" class="w-full min-w-0 text-sm text-neutral-500 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-emerald-700" @change="pilihLogoTs" />
+                    </div>
+                    <InputError :message="tsLogoError || formErrors.logo" />
+                </div>
+                <p class="rounded-lg bg-neutral-50 px-3 py-2 text-xs text-neutral-500">Otomatis dibuat: akun kasir, admin & super admin (username dari kode sekolah, password tampil setelah simpan).</p>
+            </div>
+            <Button type="button" class="mt-4 h-11 w-full bg-emerald-600 hover:bg-emerald-700" :disabled="menyimpanTs" @click="simpanSekolahBaru()">{{ menyimpanTs ? 'Menyimpan...' : 'Simpan Sekolah + Buat Akun' }}</Button>
         </div>
     </div>
 </template>

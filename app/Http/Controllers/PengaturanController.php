@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Models\Sekolah;
+use App\Models\TbUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -96,12 +98,99 @@ class PengaturanController extends Controller
                 'alamat_sekolah' => $target->alamat_sekolah,
                 'website' => $target->website,
                 'logo_url' => $target->logo ? asset('storage/'.$target->logo) : null,
+                'qris_url' => $target->qris_image ? asset('storage/'.$target->qris_image) : null,
             ],
             'me' => [
                 'nama_lengkap' => $user->nama_lengkap,
                 'username' => $user->username,
             ],
         ]);
+    }
+
+    /** POST /pengaturan/sekolah — tambah sekolah baru + buatkan akun
+     * kasir, admin & super admin-nya. Khusus developer. */
+    public function storeSekolah(Request $request)
+    {
+        if (! $this->isDeveloper($request)) {
+            abort(403, 'Hanya developer yang bisa menambah sekolah.');
+        }
+
+        $v = $request->validate([
+            'kode_sekolah' => ['required', 'string', 'max:20', 'unique:tb_sekolah,kode_sekolah'],
+            'nama_sekolah' => ['required', 'string', 'max:150'],
+            'alamat_sekolah' => ['nullable', 'string', 'max:2000'],
+            'website' => ['nullable', 'string', 'max:200'],
+            'logo' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+        ], [
+            'kode_sekolah.unique' => 'Kode sekolah sudah dipakai.',
+            'logo.image' => 'Logo harus berupa file gambar.',
+            'logo.mimes' => 'Logo harus berformat jpg, jpeg, png, atau webp.',
+            'logo.max' => 'Ukuran logo maksimal 2MB.',
+        ]);
+
+        $roleKasir = Role::where('nama_role', 'kasir')->first();
+        $roleAdmin = Role::where('nama_role', 'admin')->first();
+        $roleSuper = Role::where('nama_role', 'super admin')->first();
+        if (! $roleKasir || ! $roleAdmin || ! $roleSuper) {
+            return back()->withErrors(['nama_sekolah' => 'Role kasir/admin/super admin belum tersedia di database.'])->withInput();
+        }
+
+        $kode = strtoupper(trim($v['kode_sekolah']));
+        $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '', $kode));
+        $password = $slug.'123';
+
+        try {
+            $akun = DB::transaction(function () use ($request, $v, $kode, $slug, $password, $roleKasir, $roleAdmin, $roleSuper) {
+                $logo = $request->hasFile('logo') ? $request->file('logo')->store('sekolah', 'public') : null;
+
+                $sekolah = Sekolah::create([
+                    'kode_sekolah' => $kode,
+                    'nama_sekolah' => $v['nama_sekolah'],
+                    'alamat_sekolah' => $v['alamat_sekolah'] ?? null,
+                    'website' => $v['website'] ?? null,
+                    'logo' => $logo,
+                    'is_active' => true,
+                ]);
+
+                $dibuat = [];
+                foreach ([
+                    ['role' => $roleKasir, 'slug' => 'kasir', 'nama' => 'Kasir'],
+                    ['role' => $roleAdmin, 'slug' => 'admin', 'nama' => 'Admin'],
+                    ['role' => $roleSuper, 'slug' => 'superadmin', 'nama' => 'Super Admin'],
+                ] as $a) {
+                    $username = $slug.'.'.$a['slug'];
+                    // Hindari tabrakan bila kode dipakai ulang / username sudah ada.
+                    $counter = 1;
+                    $basis = $username;
+                    while (TbUser::where('id_sekolah', $sekolah->id_sekolah)->where('username', $username)->whereNull('deleted_at')->exists()) {
+                        $counter++;
+                        $username = $basis.$counter;
+                    }
+                    TbUser::create([
+                        'id_sekolah' => $sekolah->id_sekolah,
+                        'id_role' => $a['role']->id_role,
+                        'nama_lengkap' => $a['nama'].' '.$kode,
+                        'username' => $username,
+                        'password' => $password, // cast 'hashed' otomatis
+                        'is_active' => true,
+                        'created_by' => $request->user()->id_user,
+                    ]);
+                    $dibuat[] = ['role' => $a['nama'], 'username' => $username];
+                }
+
+                return [
+                    'sekolah' => $sekolah->nama_sekolah,
+                    'password' => $password,
+                    'akun' => $dibuat,
+                ];
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['nama_sekolah' => 'Gagal menambah sekolah. Silakan coba lagi.'])->withInput();
+        }
+
+        return back()->with('success', "Sekolah {$akun['sekolah']} berhasil ditambahkan beserta 3 akunnya.")->with('akun_baru', $akun);
     }
 
     /** PUT /pengaturan/sekolah/{id} — edit profil sekolah (developer & super admin saja) */
@@ -119,12 +208,16 @@ class PengaturanController extends Controller
             'alamat_sekolah' => ['nullable', 'string', 'max:2000'],
             'website' => ['nullable', 'string', 'max:200'],
             'logo' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+            'qris_image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
         ], [
             'logo.file' => 'Logo gagal diunggah. Coba lagi.',
             'logo.image' => 'Logo harus berupa file gambar.',
             'logo.mimes' => 'Logo harus berformat jpg, jpeg, png, atau webp.',
             'logo.max' => 'Ukuran logo maksimal 2MB.',
             'logo.uploaded' => 'Logo gagal diunggah. Pastikan ukuran di bawah 2MB dan koneksi stabil, lalu coba lagi.',
+            'qris_image.image' => 'Gambar QRIS harus berupa file gambar.',
+            'qris_image.mimes' => 'Gambar QRIS harus berformat jpg, jpeg, png, atau webp.',
+            'qris_image.max' => 'Ukuran gambar QRIS maksimal 2MB.',
         ]);
 
         $sekolah = Sekolah::findOrFail($id);
@@ -142,6 +235,21 @@ class PengaturanController extends Controller
             }
         } else {
             unset($v['logo']);
+        }
+        if ($request->hasFile('qris_image')) {
+            $file = $request->file('qris_image');
+            if (! $file->isValid()) {
+                return back()->withErrors(['qris_image' => 'Gambar QRIS gagal diunggah (kode error: '.$file->getError().'). Coba file lain di bawah 2MB.']);
+            }
+            if ($sekolah->qris_image) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($sekolah->qris_image);
+            }
+            $v['qris_image'] = $file->store('sekolah', 'public');
+            if (! $v['qris_image']) {
+                return back()->withErrors(['qris_image' => 'Gambar QRIS gagal disimpan ke server. Pastikan folder storage dapat ditulis.']);
+            }
+        } else {
+            unset($v['qris_image']);
         }
         $sekolah->update($v);
 

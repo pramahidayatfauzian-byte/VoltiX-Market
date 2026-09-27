@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { Search, X } from '@lucide/vue';
+import { EllipsisVertical, Search, X } from '@lucide/vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -182,7 +183,7 @@ const formatTgl = (s: string | null) => {
             <div v-else-if="bList.data.length === 0" class="mt-3 rounded-lg bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-400">Belum ada pembelian.</div>
             <div v-else class="mt-3">
             <div class="space-y-2 sm:hidden">
-                <div v-for="(r, i) in bList.data" :key="r.id_pembelian" class="rounded-lg border border-neutral-100 px-3 py-2.5 text-sm">
+                <div v-for="(r, i) in bList.data" :key="r.id_pembelian" class="rounded-lg border border-neutral-100 border-l-4 px-3 py-2.5 text-sm" :class="r.status_pembelian === 'selesai' ? 'border-l-green-500' : 'border-l-amber-500'">
                     <div class="flex items-center justify-between gap-2">
                         <p class="truncate font-semibold text-neutral-900">{{ r.nomor_faktur }}</p>
                         <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold capitalize" :class="r.status_pembelian === 'selesai' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">{{ r.status_pembelian }}</span>
@@ -221,10 +222,22 @@ const formatTgl = (s: string | null) => {
                             <td class="py-2 pr-2 text-center">
                                 <span class="rounded-full px-2 py-0.5 text-xs font-semibold capitalize" :class="r.status_pembelian === 'selesai' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">{{ r.status_pembelian }}</span>
                             </td>
-                            <td class="py-2 text-center whitespace-nowrap">
-                                <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100" @click="bukaDetail(r.id_pembelian)">Detail</button>
-                                <button v-if="r.status_pembelian === 'draft'" type="button" class="rounded-md px-2 py-1 text-xs font-medium text-green-600 hover:bg-green-50" @click="selesaikan(r.id_pembelian)">Selesaikan</button>
-                                <button v-if="r.status_pembelian === 'draft'" type="button" class="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" @click="hapusBeli(r.id_pembelian)">Hapus</button>
+                            <td class="py-2 text-center">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger as-child>
+                                        <button type="button" aria-label="Aksi" title="Aksi" class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-emerald-700">
+                                            <EllipsisVertical class="h-5 w-5" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" class="w-44">
+                                        <DropdownMenuItem @click="bukaDetail(r.id_pembelian)">Detail</DropdownMenuItem>
+                                        <template v-if="r.status_pembelian === 'draft'">
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem @click="selesaikan(r.id_pembelian)">Selesaikan</DropdownMenuItem>
+                                            <DropdownMenuItem class="text-red-600 focus:text-red-600" @click="hapusBeli(r.id_pembelian)">Hapus</DropdownMenuItem>
+                                        </template>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </td>
                         </tr>
                     </tbody>

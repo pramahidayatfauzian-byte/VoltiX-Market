@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
-    HandCoins,
     History,
     LayoutDashboard,
     LayoutGrid,
@@ -31,6 +30,8 @@ const { isCurrentUrl } = useCurrentUrl();
 
 const role = computed(() => (page.props.auth.user?.role as string | undefined) ?? '');
 const isKasir = computed(() => role.value === 'kasir');
+// Super admin & developer tidak menyentuh penjualan: menu terbatas.
+const isTanpaKasir = computed(() => ['developer', 'super admin'].includes(role.value));
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -38,8 +39,6 @@ const navGroups = computed<NavGroup[]>(() => {
     const operasional: NavItem[] = [
         { title: 'Dashboard', href: dashboard(), icon: LayoutDashboard },
         { title: 'Kasir / Transaksi', href: '/kasir', icon: ReceiptText },
-        { title: 'Riwayat', href: '/laporan', icon: History },
-        { title: 'Piutang', href: '/piutang', icon: HandCoins },
         { title: 'Retur', href: '/retur', icon: RotateCcw },
     ];
     const persediaan: NavItem[] = [
@@ -55,8 +54,10 @@ const navGroups = computed<NavGroup[]>(() => {
     ];
 
     const izinKasir = new Set(['Dashboard', 'Kasir / Transaksi', 'Produk', 'Pelanggan']);
+    const menuTanpaKasir = new Set(['Dashboard', 'User', 'Pengaturan']);
 
     const saring = (items: NavItem[]) => {
+        if (isTanpaKasir.value) return items.filter((m) => menuTanpaKasir.has(m.title));
         if (isKasir.value) return items.filter((m) => izinKasir.has(m.title));
         return items;
     };
@@ -73,11 +74,13 @@ const datar = computed(() => navGroups.value.flatMap((g) => g.items));
 // 4 menu utama + 1 tombol "Lainnya" = 5 di bar bawah.
 // Urutan mobile: Beranda, Produk, Kasir (tengah & diperbesar), Riwayat.
 // Riwayat = /laporan (khusus kasir disembunyikan karena backend 403, fallback ke Pelanggan).
-const judulUtama = computed(() =>
-    isKasir.value
+// Developer & super admin tanpa penjualan: hanya Beranda (+ Lainnya berisi User & Pengaturan).
+const judulUtama = computed(() => {
+    if (isTanpaKasir.value) return ['Dashboard'];
+    return isKasir.value
         ? ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Pelanggan']
-        : ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Riwayat'],
-);
+        : ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Riwayat'];
+});
 
 const utama = computed(() =>
     judulUtama.value
@@ -171,8 +174,8 @@ watch(() => page.url, () => {
                 <SheetHeader class="text-left">
                     <SheetTitle>Semua Menu</SheetTitle>
                 </SheetHeader>
-                <div v-for="g in sisaGroups" :key="g.label" class="mt-2">
-                    <p class="px-1 py-1 text-[11px] font-semibold tracking-widest text-neutral-400 uppercase">{{ g.label }}</p>
+                <div v-for="g in sisaGroups" :key="g.label" class="mt-3">
+                    <p class="pembatas px-1"><span>{{ g.label }}</span></p>
                     <div class="grid grid-cols-4 gap-1">
                         <Link
                             v-for="m in g.items"

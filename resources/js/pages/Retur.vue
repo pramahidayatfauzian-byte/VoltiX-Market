@@ -148,10 +148,10 @@ const formatTgl = (s: string | null) => {
         </div>
 
         <div class="grid w-full grid-cols-2 gap-1 rounded-lg bg-neutral-100 p-1 sm:w-fit">
-            <button type="button" class="flex min-h-11 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-center text-xs font-medium transition sm:px-3 sm:py-1.5 sm:text-sm" :class="tab === 'jual' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700'" @click="tab = 'jual'">
+            <button type="button" class="tab-pil flex min-h-11 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-center text-xs font-medium transition sm:px-3 sm:py-1.5 sm:text-sm" :class="[tab === 'jual' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700', { 'tab-aktif': tab === 'jual' }]" @click="tab = 'jual'">
                 <ShoppingBag class="h-4 w-4 shrink-0" /> <span class="leading-tight">Retur Penjualan</span>
             </button>
-            <button type="button" class="flex min-h-11 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-center text-xs font-medium transition sm:px-3 sm:py-1.5 sm:text-sm" :class="tab === 'beli' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700'" @click="tab = 'beli'">
+            <button type="button" class="tab-pil flex min-h-11 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-center text-xs font-medium transition sm:px-3 sm:py-1.5 sm:text-sm" :class="[tab === 'beli' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700', { 'tab-aktif': tab === 'beli' }]" @click="tab = 'beli'">
                 <ShoppingCart class="h-4 w-4 shrink-0" /> <span class="leading-tight">Retur Pembelian</span>
             </button>
         </div>
@@ -206,8 +206,9 @@ const formatTgl = (s: string | null) => {
                 <div v-if="rLoading" class="py-8 text-center text-sm text-neutral-400">Memuat...</div>
                 <div v-else-if="riwayat.length === 0" class="mt-3 rounded-lg bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-400">Belum ada retur.</div>
                 <div v-else class="mt-3">
-                    <div class="space-y-2 sm:hidden">
-                        <div v-for="r in riwayat" :key="r.id_retur" class="rounded-lg border border-neutral-100 px-3 py-2.5 text-sm" :title="r.alasan ?? ''">
+                    <div class="tl sm:hidden">
+                        <div v-for="r in riwayat" :key="r.id_retur" class="tl-item text-sm" :title="r.alasan ?? ''">
+                            <span class="tl-titik amber" />
                             <div class="flex items-center justify-between gap-2">
                                 <p class="truncate font-semibold text-neutral-900">{{ r.barang?.nama ?? '-' }}</p>
                                 <span class="shrink-0 font-bold whitespace-nowrap">{{ formatRp(r.subtotal) }}</span>

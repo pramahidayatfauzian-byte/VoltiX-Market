@@ -155,6 +155,7 @@
 .bg-\[\#f3f5f9\] {
     background-color: #f4f7f5;
     background-image:
+        repeating-linear-gradient(to bottom, transparent 0 31px, rgba(13, 148, 136, 0.045) 31px 32px),
         radial-gradient(640px 220px at 12% -60px, rgba(20, 184, 166, 0.09), transparent 60%),
         radial-gradient(560px 200px at 88% -50px, rgba(45, 212, 191, 0.08), transparent 60%),
         linear-gradient(to bottom, #f8fbfa, #eff4f1);
@@ -234,10 +235,142 @@
     color-scheme: dark;
 }
 
-/* Latar kartu / panel / modal / container */
+/* Desain sidebar: gradasi teal mendalam (terang) / gelap pekat (gelap). */
+div[data-sidebar='sidebar'] {
+    background-color: #0d9488;
+    background-image: linear-gradient(to bottom, #0f766e, #0d9488 55%, #115e59);
+}
+.dark div[data-sidebar='sidebar'] {
+    background-color: #0c0c0d;
+    background-image: linear-gradient(to bottom, #101013, #17171b 55%, #0b0b0d);
+}
+
+/* Konten mode gelap: tetap gelap dengan semburat ambient sangat tipis. */
 .dark .bg-\[\#f3f5f9\] {
     background-color: #0a0a0a;
-    background-image: none;
+    background-image:
+        repeating-linear-gradient(to bottom, transparent 0 31px, rgba(255, 255, 255, 0.025) 31px 32px),
+        radial-gradient(640px 200px at 12% -60px, rgba(20, 184, 166, 0.06), transparent 60%),
+        radial-gradient(560px 180px at 88% -50px, rgba(45, 212, 191, 0.04), transparent 60%);
+}
+
+/* Sidebar tanpa bilah scroll terlihat di semua halaman
+   (isi tetap bisa digulir via roda sentuh/jari). */
+[data-sidebar='content'] {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+[data-sidebar='content']::-webkit-scrollbar {
+    display: none;
+}
+
+/* Belang tabel (zebra) di semua halaman — hover baris tetap menang. */
+tbody tr:nth-child(even) {
+    background-color: #f7faf8;
+}
+.dark tbody tr:nth-child(even) {
+    background-color: #131315;
+}
+
+/* Garis aksen di bawah judul tiap halaman. */
+.anim-konten-dark h1::after {
+    content: '';
+    display: block;
+    width: 46px;
+    height: 3px;
+    margin-top: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(to right, #14b8a6, #5eead4);
+}
+
+/* Tab pil dengan garis indikator aktif. */
+.tab-pil {
+    position: relative;
+}
+.tab-pil.tab-aktif::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    width: 28px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* Divider berlabel (garis–teks–garis). */
+.pembatas {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #a3a3a3;
+}
+.pembatas::before,
+.pembatas::after {
+    content: '';
+    height: 1px;
+    flex: 1;
+    background: linear-gradient(to right, transparent, #d6d3d1, transparent);
+}
+.dark .pembatas {
+    color: #8f8f8f;
+}
+.dark .pembatas::before,
+.dark .pembatas::after {
+    background: linear-gradient(to right, transparent, #3a3a3a, transparent);
+}
+
+/* Timeline vertikal (riwayat stok, retur, audit). */
+.tl {
+    position: relative;
+    margin: 0 0 0 5px;
+    padding: 2px 0 2px 18px;
+    border-left: 2px solid #e5e7eb;
+}
+.dark .tl {
+    border-color: #2b2b2b;
+}
+.tl-item {
+    position: relative;
+    padding-bottom: 14px;
+}
+.tl-item:last-child {
+    padding-bottom: 2px;
+}
+.tl-titik {
+    position: absolute;
+    top: 3px;
+    left: -24.5px;
+    width: 11px;
+    height: 11px;
+    border-radius: 9999px;
+    border: 2px solid #fff;
+    background: #14b8a6;
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.25);
+}
+.dark .tl-titik {
+    border-color: #171717;
+}
+.tl-titik.hijau {
+    background: #22c55e;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+.tl-titik.merah {
+    background: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+.tl-titik.amber {
+    background: #f59e0b;
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+.tl-titik.biru {
+    background: #0ea5e9;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
 }
 .dark .bg-white {
     background-color: #171717;
@@ -448,6 +581,27 @@
 /* Label sumbu grafik Dashboard agar kontras di latar gelap */
 .dark .fill-neutral-400 {
     fill: #a8a8a8;
+}
+
+/* Animasi masuk konten di mode gelap pada semua halaman.
+   Tayang ulang tiap pindah halaman (key = URL di AppContent). */
+@keyframes konten-masuk-gelap {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.dark .anim-konten-dark {
+    animation: konten-masuk-gelap 0.45s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+    .dark .anim-konten-dark {
+        animation: none;
+    }
 }
 
 /* Ring titik notifikasi / badge mengikuti latar gelap */

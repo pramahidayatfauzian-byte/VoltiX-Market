@@ -131,7 +131,7 @@ const formatRp = (n: number) => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
             <div v-else class="mt-3">
                 <!-- Kartu mobile -->
                 <div class="space-y-2 sm:hidden">
-                    <div v-for="(r, i) in list.data" :key="r.id_penjualan" class="rounded-lg border border-neutral-100 px-3 py-2.5 text-sm">
+                    <div v-for="(r, i) in list.data" :key="r.id_penjualan" class="rounded-lg border border-neutral-100 border-l-4 border-l-amber-500 px-3 py-2.5 text-sm">
                         <div class="flex items-center justify-between gap-2">
                             <p class="truncate font-semibold text-neutral-900">#{{ r.id_penjualan }} · {{ r.pelanggan ?? '-' }}</p>
                             <span class="shrink-0 font-bold whitespace-nowrap text-amber-600">{{ formatRp(r.sisa) }}</span>

@@ -17,7 +17,12 @@ class KasirController extends Controller
 {
     private function authorizeAkses(Request $request): void
     {
-        // Semua role boleh akses kasir (developer global, super admin/admin/kasir per-sekolah).
+        // Developer & super admin tidak boleh menyentuh penjualan.
+        // Admin & kasir boleh (terkunci di sekolah sendiri via Tenant).
+        $role = $request->user()->role?->nama_role ?? '';
+        if (in_array($role, ['developer', 'super admin'], true)) {
+            abort(403, 'Developer / super admin tidak dapat mengakses kasir.');
+        }
     }
 
     /** Cari barang terdaftar di satu tenant (cocok longgar: abaikan nol di depan). */
@@ -68,6 +73,11 @@ class KasirController extends Controller
             'kelompok_pelanggan' => $kelompok,
             'kategori_list' => $kategori,
             'produk_list' => $produk,
+            'qris_url' => (! $semua && $sekolahId)
+                ? ($qr = \App\Models\Sekolah::where('id_sekolah', $sekolahId)->value('qris_image'))
+                    ? asset('storage/'.$qr)
+                    : null
+                : null,
         ]);
     }
 

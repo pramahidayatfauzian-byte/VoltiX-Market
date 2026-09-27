@@ -163,7 +163,7 @@ const cards = computed(() => [
             <div v-else class="mt-3">
                 <!-- Kartu mobile -->
                 <div class="space-y-2 sm:hidden">
-                    <div v-for="(r, i) in rows" :key="r.id_penjualan" class="rounded-lg border border-neutral-100 px-3 py-2.5 text-sm">
+                    <div v-for="(r, i) in rows" :key="r.id_penjualan" class="rounded-lg border border-neutral-100 border-l-4 px-3 py-2.5 text-sm" :class="r.status_pembayaran === 'sudah bayar' ? 'border-l-green-500' : 'border-l-amber-500'">
                         <div class="flex items-center justify-between gap-2">
                             <span class="font-bold whitespace-nowrap text-neutral-900">{{ formatRp(r.total_faktur) }}</span>
                             <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="r.status_pembayaran === 'sudah bayar' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'">

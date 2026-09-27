@@ -91,6 +91,8 @@ const cards = computed(() => [
         tren: badgeTren(props.stats.tren_penjualan),
         card: 'border-emerald-100 bg-emerald-50',
         chip: 'bg-emerald-500 text-white',
+        spark: props.grafik.map((g) => g.total),
+        sparkWarna: '#14b8a6',
     },
     {
         title: 'Transaksi',
@@ -100,6 +102,8 @@ const cards = computed(() => [
         tren: badgeTren(props.stats.tren_transaksi),
         card: 'border-sky-100 bg-sky-50',
         chip: 'bg-sky-500 text-white',
+        spark: props.grafik.map((g) => g.transaksi),
+        sparkWarna: '#0ea5e9',
     },
     {
         title: 'Produk Terjual',
@@ -109,6 +113,8 @@ const cards = computed(() => [
         tren: null,
         card: 'border-amber-100 bg-amber-50',
         chip: 'bg-amber-500 text-white',
+        spark: null as number[] | null,
+        sparkWarna: '#f59e0b',
     },
     {
         title: 'Pelanggan',
@@ -120,8 +126,24 @@ const cards = computed(() => [
         tren: null,
         card: 'border-violet-100 bg-violet-50',
         chip: 'bg-violet-500 text-white',
+        spark: null as number[] | null,
+        sparkWarna: '#8b5cf6',
     },
 ]);
+
+// Garis tren mini (sparkline) 7 hari untuk kartu.
+function poinSpark(data: number[]): string {
+    const maks = Math.max(...data);
+    const min = Math.min(...data);
+    const rentang = maks - min || 1;
+    return data
+        .map((v, i) => {
+            const x = data.length <= 1 ? 50 : (i / (data.length - 1)) * 100;
+            const y = 24 - ((v - min) / rentang) * 20;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        })
+        .join(' ');
+}
 
 // ---------- Grafik garis ganda (omzet teal + transaksi kuning) ----------
 const LW = 720;
@@ -167,6 +189,17 @@ const garisGrid = computed(() =>
         (f) => LH - PAD.bawah - f * (LH - PAD.atas - PAD.bawah),
     ),
 );
+const sumbuX = computed(() =>
+    props.grafik.map((_, i) => titik(i, 0, 1)[0]),
+);
+const areaTotal = computed(() => {
+    if (garisTotal.value === '') return '';
+    const n = props.grafik.length;
+    const xAkhir = titik(n - 1, 0, 1)[0];
+    const xAwal = titik(0, 0, 1)[0];
+    const yDasar = LH - PAD.bawah;
+    return `${garisTotal.value} L ${xAkhir} ${yDasar} L ${xAwal} ${yDasar} Z`;
+});
 const labelSumbuY = computed(() =>
     [0, 1 / 3, 2 / 3, 1].map((f) =>
         f === 0 ? '0' : formatSingkat(maksTotal.value * f),
@@ -254,6 +287,9 @@ const labelSumbuY = computed(() =>
                             </span>
                             <span class="truncate text-xs text-neutral-400">{{ c.sub }}</span>
                         </p>
+                        <svg v-if="c.spark && c.spark.length > 1" viewBox="0 0 100 28" class="mt-2 h-7 w-full" preserveAspectRatio="none" aria-hidden="true">
+                            <polyline :points="poinSpark(c.spark)" fill="none" :stroke="c.sparkWarna" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
                     </div>
                     <div
                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
@@ -299,12 +335,22 @@ const labelSumbuY = computed(() =>
                 </div>
 
                 <svg v-else :viewBox="`0 0 ${LW} ${LH}`" class="mt-2 h-auto w-full" role="img" aria-label="Grafik penjualan 7 hari">
+                    <defs>
+                        <linearGradient id="isiOmzet" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#eab308" stop-opacity="0.25" />
+                            <stop offset="100%" stop-color="#eab308" stop-opacity="0" />
+                        </linearGradient>
+                    </defs>
+                    <g v-for="x in sumbuX" :key="'v' + x">
+                        <line :x1="x" :x2="x" :y1="PAD.atas" :y2="LH - PAD.bawah" class="stroke-neutral-100" stroke-width="1" stroke-dasharray="2 5" />
+                    </g>
                     <g v-for="(gy, i) in garisGrid" :key="i">
-                        <line :x1="PAD.kiri" :x2="LW - PAD.kanan" :y1="gy" :y2="gy" class="stroke-neutral-100" stroke-width="1" />
+                        <line :x1="PAD.kiri" :x2="LW - PAD.kanan" :y1="gy" :y2="gy" class="stroke-neutral-200" stroke-width="1" stroke-dasharray="5 4" />
                         <text :x="PAD.kiri - 8" :y="gy + 4" text-anchor="end" class="fill-neutral-400" font-size="11">
                             {{ labelSumbuY[i] }}
                         </text>
                     </g>
+                    <path :d="areaTotal" fill="url(#isiOmzet)" stroke="none" />
                     <path :d="garisTotal" fill="none" stroke="#eab308" stroke-width="2.5" stroke-linecap="round" />
                     <path :d="garisTrx" fill="none" stroke="#14b8a6" stroke-width="2.5" stroke-linecap="round" />
                     <g v-for="(g, i) in grafik" :key="g.tanggal">

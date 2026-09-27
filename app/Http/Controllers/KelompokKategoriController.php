@@ -81,10 +81,12 @@ class KelompokKategoriController extends Controller
         $kelompok = KelompokKategori::tenant($request->user()->id_sekolah, $this->isDeveloper($request))
             ->findOrFail($id);
 
-        if (Kategori::where('id_kelompok', $id)->valid()->exists()) {
+        // Cek SEMUA baris (termasuk yang terhapus-lembut) karena FK RESTRICT
+        // database tetap menahan walau datanya sudah dihapus lembut.
+        if (Kategori::where('id_kelompok', $id)->exists()) {
             return back()->withErrors(['kelompok' => 'Kelompok masih dipakai kategori, tidak bisa dihapus.']);
         }
-        if (\App\Models\Barang::where('id_kelompok_kategori', $id)->valid()->exists()) {
+        if (\App\Models\Barang::where('id_kelompok_kategori', $id)->exists()) {
             return back()->withErrors(['kelompok' => 'Kelompok masih dipakai produk, tidak bisa dihapus.']);
         }
 

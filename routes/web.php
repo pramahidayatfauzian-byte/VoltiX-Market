@@ -119,6 +119,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Pengaturan
     Route::get('pengaturan', [PengaturanController::class, 'index'])->name('pengaturan.index');
+    Route::post('pengaturan/sekolah', [PengaturanController::class, 'storeSekolah'])->name('pengaturan.sekolah.store');
     Route::get('pengaturan/backup', [PengaturanController::class, 'backup'])->name('pengaturan.backup');
     Route::match(['put', 'post'], 'pengaturan/sekolah/{id}', [PengaturanController::class, 'updateSekolah'])->name('pengaturan.sekolah');
     Route::get('pengaturan/password', [PengaturanController::class, 'editPassword'])->name('pengaturan.password.edit');

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { Barcode, FolderTree, Layers, ScanBarcode, Search, ShoppingBag, X } from '@lucide/vue';
+import { Barcode, EllipsisVertical, FolderTree, Layers, ScanBarcode, Search, ShoppingBag, X } from '@lucide/vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import BarcodeView from '@/components/BarcodeView.vue';
 import BarcodeScanner from '@/components/BarcodeScanner.vue';
 import InputError from '@/components/InputError.vue';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -208,6 +209,26 @@ async function bukaDetail(r: BarangRow) {
 const fotoFile = ref<File | null>(null);
 const fotoPreview = ref<string | null>(null);
 
+// Kategori dikelompokkan per kelompoknya agar sekali pilih langsung dapat
+// kelompoknya (menyatu) — tanpa dropdown kelompok terpisah.
+const kategoriTerkelompok = computed(() => {
+    const namaKelompok = new Map<number, string>(
+        props.kelompok_list.map((k) => [k.id, k.nama_kelompok ?? '-']),
+    );
+    const grup = new Map<string, Kategori[]>();
+    for (const k of props.kategori_list) {
+        const label = (k.id_kelompok != null && namaKelompok.get(k.id_kelompok)) || 'Tanpa kelompok';
+        if (!grup.has(label)) grup.set(label, []);
+        grup.get(label)!.push(k);
+    }
+    return [...grup.entries()];
+});
+
+function sinkronKelompok() {
+    const kat = props.kategori_list.find((k) => String(k.id_kategori) === String(f.id_kategori));
+    f.id_kelompok_kategori = kat?.id_kelompok ?? '';
+}
+
 function pilihFoto(e: Event) {
     const file = (e.target as HTMLInputElement).files?.[0] ?? null;
     fotoFile.value = file;
@@ -406,13 +427,13 @@ function salinBarcode() {
         </div>
 
         <div class="grid w-full grid-cols-3 gap-1 rounded-lg bg-neutral-100 p-1 sm:w-fit">
-            <button type="button" class="flex min-h-11 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-xs font-medium transition sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm" :class="tab === 'produk' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700'" @click="tab = 'produk'">
+            <button type="button" class="tab-pil flex min-h-11 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-xs font-medium transition sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm" :class="[tab === 'produk' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700', { 'tab-aktif': tab === 'produk' }]" @click="tab = 'produk'">
                 <ShoppingBag class="h-4 w-4 shrink-0" /> <span class="leading-tight">Daftar Produk</span>
             </button>
-            <button type="button" class="flex min-h-11 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-xs font-medium transition sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm" :class="tab === 'kategori' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700'" @click="tab = 'kategori'">
+            <button type="button" class="tab-pil flex min-h-11 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-xs font-medium transition sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm" :class="[tab === 'kategori' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700', { 'tab-aktif': tab === 'kategori' }]" @click="tab = 'kategori'">
                 <FolderTree class="h-4 w-4 shrink-0" /> <span class="leading-tight">Kategori</span>
             </button>
-            <button type="button" class="flex min-h-11 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-xs font-medium transition sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm" :class="tab === 'kelompok' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700'" @click="tab = 'kelompok'">
+            <button type="button" class="tab-pil flex min-h-11 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-center text-xs font-medium transition sm:flex-row sm:gap-1.5 sm:px-3 sm:py-1.5 sm:text-sm" :class="[tab === 'kelompok' ? 'bg-emerald-600 text-white shadow-sm' : 'text-neutral-500 hover:text-emerald-700', { 'tab-aktif': tab === 'kelompok' }]" @click="tab = 'kelompok'">
                 <Layers class="h-4 w-4 shrink-0" /> <span class="leading-tight">Kelompok</span>
             </button>
         </div>
@@ -455,7 +476,7 @@ function salinBarcode() {
             <div v-else class="mt-3">
             <!-- Kartu mobile -->
             <div class="space-y-2 sm:hidden">
-                <div v-for="(r, i) in pList.data" :key="r.id_barang" class="rounded-lg border border-neutral-100 px-3 py-2.5 text-sm">
+                <div v-for="(r, i) in pList.data" :key="r.id_barang" class="rounded-lg border border-neutral-100 border-l-4 px-3 py-2.5 text-sm" :class="!r.is_active ? 'border-l-neutral-300' : r.stok <= 0 ? 'border-l-red-500' : r.stok <= 5 ? 'border-l-amber-500' : 'border-l-emerald-500'">
                     <div class="flex items-center gap-3">
                         <img v-if="r.foto" :src="fotoUrl(r.foto) ?? undefined" :alt="r.nama ?? ''" class="h-11 w-11 shrink-0 rounded-lg border border-neutral-200 object-cover" loading="lazy" />
                         <span v-else class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-300"><ShoppingBag class="h-5 w-5" /></span>
@@ -480,50 +501,52 @@ function salinBarcode() {
                 </div>
             </div>
             <div class="hidden overflow-x-auto sm:block">
-                <table class="w-full min-w-200 text-left text-sm">
+                <table class="w-full min-w-160 text-left text-sm">
                     <thead>
                         <tr class="border-b border-neutral-100 text-xs text-neutral-400">
-                            <th class="py-2 pr-2 font-medium">No</th>
-                            <th class="py-2 pr-2 font-medium">Foto</th>
-                            <th class="py-2 pr-2 font-medium">Barcode</th>
-                            <th class="py-2 pr-2 font-medium">Nama Produk</th>
+                            <th class="py-2 pr-2 font-medium">Produk</th>
                             <th class="py-2 pr-2 font-medium">Kategori</th>
-                            <th class="py-2 pr-2 text-right font-medium">Harga Jual</th>
+                            <th class="py-2 pr-2 text-right font-medium">Harga</th>
                             <th class="py-2 pr-2 text-center font-medium">Stok</th>
-                            <th class="py-2 pr-2 text-center font-medium">Status</th>
                             <th class="py-2 text-center font-medium">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(r, i) in pList.data" :key="r.id_barang" class="border-b border-neutral-50 last:border-0 hover:bg-neutral-50">
-                            <td class="py-2 pr-2 text-neutral-500">{{ (pList.current_page - 1) * 10 + i + 1 }}</td>
+                        <tr v-for="r in pList.data" :key="r.id_barang" class="border-b border-neutral-50 last:border-0 hover:bg-neutral-50">
                             <td class="py-2 pr-2">
-                                <img v-if="r.foto" :src="fotoUrl(r.foto) ?? undefined" :alt="r.nama ?? ''" class="h-10 w-10 rounded-lg border border-neutral-200 object-cover" loading="lazy" />
-                                <span v-else class="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-100 text-neutral-300"><ShoppingBag class="h-5 w-5" /></span>
+                                <div class="flex items-center gap-2.5">
+                                    <img v-if="r.foto" :src="fotoUrl(r.foto) ?? undefined" :alt="r.nama ?? ''" class="h-10 w-10 shrink-0 rounded-lg border border-neutral-200 object-cover" loading="lazy" />
+                                    <span v-else class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-300"><ShoppingBag class="h-5 w-5" /></span>
+                                    <span class="min-w-0">
+                                        <span class="block truncate font-medium text-neutral-900">{{ r.nama }}</span>
+                                        <span v-if="r.barcode" class="mt-0.5 inline-block rounded border border-neutral-200 bg-neutral-100 px-1.5 py-px font-mono text-[11px] font-semibold text-neutral-600">{{ formatBarcode(r.barcode) }}</span>
+                                    </span>
+                                </div>
                             </td>
-                            <td class="py-2 pr-2 whitespace-nowrap">
-                                <span v-if="r.barcode" class="font-mono text-xs font-semibold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded border border-neutral-200">
-                                    {{ formatBarcode(r.barcode) }}
-                                </span>
-                                <span v-else class="text-neutral-400">-</span>
-                            </td>
-                            <td class="py-2 pr-2 font-medium text-neutral-900">{{ r.nama }}</td>
                             <td class="py-2 pr-2 text-neutral-600">{{ r.kategori?.nama ?? '-' }}</td>
-                            <td class="py-2 pr-2 text-right font-semibold whitespace-nowrap">{{ formatRp(r.harga_jual) }}</td>
-                            <td class="py-2 pr-2 text-center font-semibold" :class="r.stok <= 0 ? 'text-red-600' : r.stok <= 5 ? 'text-amber-600' : 'text-neutral-700'">{{ r.stok }}</td>
-                            <td class="py-2 pr-2 text-center">
-                                <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="r.is_active ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'">
-                                    {{ r.is_active ? 'Aktif' : 'Nonaktif' }}
-                                </span>
+                            <td class="py-2 pr-2 text-right">
+                                <span class="font-semibold whitespace-nowrap">{{ formatRp(r.harga_jual) }}</span>
+                                <span class="mt-0.5 block text-[11px] font-semibold" :class="r.is_active ? 'text-green-600' : 'text-neutral-400'">{{ r.is_active ? 'Aktif' : 'Nonaktif' }}</span>
                             </td>
-                            <td class="py-2 text-center whitespace-nowrap">
-                                <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100" @click="bukaDetail(r)">Detail</button>
-                                <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50" @click="bukaRiwayat(r)">Riwayat</button>
-                                <template v-if="bisaKelola">
-                                    <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100" @click="bukaEdit(r)">Edit</button>
-                                    <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50" @click="toggleProduk(r.id_barang)">{{ r.is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
-                                    <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" @click="hapusProduk(r.id_barang)">Hapus</button>
-                                </template>
+                            <td class="py-2 pr-2 text-center font-semibold" :class="r.stok <= 0 ? 'text-red-600' : r.stok <= 5 ? 'text-amber-600' : 'text-neutral-700'">{{ r.stok }}</td>
+                            <td class="py-2 text-center">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger as-child>
+                                        <button type="button" aria-label="Aksi" title="Aksi" class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-emerald-700">
+                                            <EllipsisVertical class="h-5 w-5" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" class="w-44">
+                                        <DropdownMenuItem @click="bukaDetail(r)">Detail</DropdownMenuItem>
+                                        <DropdownMenuItem @click="bukaRiwayat(r)">Riwayat Stok</DropdownMenuItem>
+                                        <template v-if="bisaKelola">
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem @click="bukaEdit(r)">Edit</DropdownMenuItem>
+                                            <DropdownMenuItem @click="toggleProduk(r.id_barang)">{{ r.is_active ? 'Nonaktifkan' : 'Aktifkan' }}</DropdownMenuItem>
+                                            <DropdownMenuItem class="text-red-600 focus:text-red-600" @click="hapusProduk(r.id_barang)">Hapus</DropdownMenuItem>
+                                        </template>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </td>
                         </tr>
                     </tbody>
@@ -709,18 +732,16 @@ function salinBarcode() {
                 </div>
                 <div class="sm:col-span-2"><Label>Nama Produk</Label><Input v-model="f.nama" class="mt-1.5" placeholder="Nama produk" /><InputError :message="formErrors.nama" /></div>
                 <div>
-                    <Label>Kategori</Label>
-                    <select v-model="f.id_kategori" class="mt-1.5 w-full h-9 rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20">
+                    <Label>Kategori + Kelompok</Label>
+                    <select v-model="f.id_kategori" class="mt-1.5 w-full h-9 rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20" @change="sinkronKelompok()">
                         <option value="">-- Pilih --</option>
-                        <option v-for="k in kategori_list" :key="k.id_kategori" :value="k.id_kategori">{{ k.nama }}</option>
+                        <optgroup v-for="[label, daftar] in kategoriTerkelompok" :key="label" :label="label">
+                            <option v-for="k in daftar" :key="k.id_kategori" :value="k.id_kategori">{{ k.nama }}</option>
+                        </optgroup>
                     </select>
-                </div>
-                <div>
-                    <Label>Kelompok</Label>
-                    <select v-model="f.id_kelompok_kategori" class="mt-1.5 w-full h-9 rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20">
-                        <option value="">-- Pilih --</option>
-                        <option v-for="k in kelompok_list" :key="k.id" :value="k.id">{{ k.nama_kelompok }}</option>
-                    </select>
+                    <p v-if="f.id_kelompok_kategori" class="mt-1 text-xs text-emerald-700">
+                        Kelompok: {{ kelompok_list.find((k) => String(k.id) === String(f.id_kelompok_kategori))?.nama_kelompok ?? '-' }} (otomatis)
+                    </p>
                 </div>
                 <div class="sm:col-span-2">
                     <Label>Supplier</Label>
@@ -829,7 +850,20 @@ function salinBarcode() {
                 <div v-if="riwayatKartu.length === 0" class="mt-3 rounded-lg bg-neutral-50 px-4 py-6 text-center text-sm text-neutral-400">
                     Belum ada pergerakan stok (pembelian selesai / penjualan).
                 </div>
-                <div v-else class="mt-3 overflow-x-auto">
+                <div v-else class="mt-3">
+                <div class="tl sm:hidden">
+                    <div v-for="(k, i) in riwayatKartu" :key="i" class="tl-item text-sm">
+                        <span class="tl-titik" :class="k.masuk > 0 ? 'hijau' : 'merah'" />
+                        <p class="font-semibold text-neutral-800">{{ k.keterangan }}</p>
+                        <p class="mt-0.5 text-xs whitespace-nowrap text-neutral-400">{{ formatTgl(k.tanggal) }}</p>
+                        <p class="mt-1 text-xs font-semibold">
+                            <span v-if="k.masuk > 0" class="text-green-600">+{{ k.masuk }}</span>
+                            <span v-if="k.keluar > 0" class="text-red-500">−{{ k.keluar }}</span>
+                            <span class="ml-1.5 font-bold text-neutral-700">sisa {{ k.sisa }}</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="hidden overflow-x-auto sm:block">
                     <table class="w-full min-w-120 text-left text-sm">
                         <thead>
                             <tr class="border-b border-neutral-100 text-xs text-neutral-400">
@@ -858,6 +892,7 @@ function salinBarcode() {
                             </tr>
                         </tfoot>
                     </table>
+                </div>
                 </div>
             </div>
         </div>

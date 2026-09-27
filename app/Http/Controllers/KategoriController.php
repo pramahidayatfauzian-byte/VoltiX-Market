@@ -98,7 +98,9 @@ class KategoriController extends Controller
             ->tenant($request->user()->id_sekolah, $this->isDeveloper($request))
             ->findOrFail($id);
 
-        if (\App\Models\Barang::where('id_kategori', $id)->valid()->exists()) {
+        // Cek SEMUA baris (termasuk yang terhapus-lembut) karena FK RESTRICT
+        // database tetap menahan walau datanya sudah dihapus lembut.
+        if (\App\Models\Barang::where('id_kategori', $id)->exists()) {
             return back()->withErrors(['kategori' => 'Kategori masih dipakai produk, tidak bisa dihapus.']);
         }
 

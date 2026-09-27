@@ -28,11 +28,6 @@ class NotifikasiController extends Controller
                 'warna' => (int) $b->stok <= 0 ? 'red' : 'amber',
             ]);
 
-        $piutang = Penjualan::valid()
-            ->tenant($sekolahId, $semua)
-            ->where('status_pembayaran', 'belum bayar')
-            ->count();
-
         $returBaru = Retur::tenant($sekolahId, $semua)
             ->where('tanggal_retur', '>=', now()->subDays(7))
             ->count();
@@ -46,16 +41,6 @@ class NotifikasiController extends Controller
                 'href' => $s['href'],
                 'ikon' => 'TriangleAlert',
                 'warna' => $s['warna'],
-            ]);
-        }
-
-        if ($piutang > 0) {
-            $items->push([
-                'judul' => 'Piutang',
-                'teks' => "{$piutang} faktur belum lunas",
-                'href' => '/piutang',
-                'ikon' => 'HandCoins',
-                'warna' => 'amber',
             ]);
         }
 

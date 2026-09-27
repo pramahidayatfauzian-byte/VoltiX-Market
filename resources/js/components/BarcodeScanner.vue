@@ -552,20 +552,34 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Kontrol zoom (selalu tersedia: optik bila didukung, digital bila tidak) -->
-                <div v-if="scanAktif && !memuat" class="flex items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-neutral-100/90 px-3 py-2 shadow-2xs">
-                    <div class="flex shrink-0 items-center gap-1.5 text-neutral-700">
-                        <ZoomIn class="h-4 w-4 text-emerald-600" />
-                        <span class="text-xs font-semibold">Zoom {{ zoomLevel.toFixed(1) }}x</span>
+                <div v-if="scanAktif && !memuat" class="rounded-xl border border-neutral-200 bg-neutral-100/90 px-3 py-2 shadow-2xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5 text-neutral-700">
+                            <ZoomIn class="h-4 w-4 text-emerald-600" />
+                            <span class="text-xs font-semibold">Zoom {{ zoomLevel.toFixed(1) }}x</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button
+                                v-for="opt in [1, 2, 3]"
+                                :key="opt"
+                                type="button"
+                                class="h-7 min-w-9 rounded-md px-2 text-[11px] font-bold transition"
+                                :class="Math.abs(zoomLevel - opt) < 0.1 ? 'bg-emerald-600 text-white shadow-xs' : 'border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-200'"
+                                @click="aturZoom(opt)"
+                            >
+                                {{ opt }}x
+                            </button>
+                        </div>
                     </div>
-                    <div class="mx-2 flex flex-1 items-center gap-1.5">
+                    <div class="mt-1.5 flex items-center gap-2">
                         <button
                             type="button"
-                            class="rounded p-1 text-neutral-500 transition hover:bg-neutral-200 hover:text-neutral-900 disabled:opacity-30"
+                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-500 transition hover:bg-neutral-200 hover:text-neutral-900 disabled:opacity-30"
                             :disabled="zoomLevel <= minZoom"
                             title="Perkecil (-)"
                             @click="aturZoom(zoomLevel - 0.5)"
                         >
-                            <Minus class="h-3.5 w-3.5" />
+                            <Minus class="h-4 w-4" />
                         </button>
                         <input
                             type="range"
@@ -578,24 +592,12 @@ onUnmounted(() => {
                         />
                         <button
                             type="button"
-                            class="rounded p-1 text-neutral-500 transition hover:bg-neutral-200 hover:text-neutral-900 disabled:opacity-30"
+                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-500 transition hover:bg-neutral-200 hover:text-neutral-900 disabled:opacity-30"
                             :disabled="zoomLevel >= maxZoom"
                             title="Perbesar (+)"
                             @click="aturZoom(zoomLevel + 0.5)"
                         >
-                            <Plus class="h-3.5 w-3.5" />
-                        </button>
-                    </div>
-                    <div class="flex shrink-0 items-center gap-1">
-                        <button
-                            v-for="opt in [1, 2, 3]"
-                            :key="opt"
-                            type="button"
-                            class="rounded-md px-2 py-0.5 text-[11px] font-bold transition"
-                            :class="Math.abs(zoomLevel - opt) < 0.1 ? 'bg-emerald-600 text-white shadow-xs' : 'border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-200'"
-                            @click="aturZoom(opt)"
-                        >
-                            {{ opt }}x
+                            <Plus class="h-4 w-4" />
                         </button>
                     </div>
                 </div>
@@ -633,6 +635,7 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Input manual -->
+                <div class="pembatas" aria-hidden="true"><span>atau ketik</span></div>
                 <div class="flex items-center gap-1.5">
                     <div class="relative flex-1">
                         <Keyboard class="pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />

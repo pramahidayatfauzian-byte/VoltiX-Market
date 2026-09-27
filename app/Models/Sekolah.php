@@ -17,6 +17,7 @@ class Sekolah extends Model
         'alamat_sekolah',
         'website',
         'logo',
+        'qris_image',
         'is_active',
     ];
 

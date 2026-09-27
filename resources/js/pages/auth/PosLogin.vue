@@ -98,9 +98,9 @@ function toggleTema() {
 
             <!-- Bentuk dekoratif melayang (jelas terlihat di mode terang) -->
             <div aria-hidden="true" class="pointer-events-none absolute inset-0">
-                <span class="anim-apung absolute top-[12%] left-[8%] size-20 rounded-full border-[3px] border-emerald-200/80 sm:size-24 dark:border-emerald-800/60" />
-                <span class="anim-apung-lambat absolute right-[10%] bottom-[14%] size-14 rotate-12 rounded-2xl border-[3px] border-teal-200/80 sm:size-16 dark:border-teal-800/60" />
-                <span class="anim-hanyut-cepat absolute top-[58%] left-[6%] hidden items-end gap-[3px] sm:flex" aria-hidden="true">
+                <span class="anim-apung absolute top-[5%] left-[8%] size-20 rounded-full border-[3px] border-emerald-200/80 sm:size-24 dark:border-emerald-800/60" />
+                <span class="anim-apung-lambat absolute right-[10%] bottom-[16%] size-14 rotate-12 rounded-2xl border-[3px] border-teal-200/80 sm:size-16 dark:border-teal-800/60" />
+                <span class="anim-hanyut-cepat absolute right-[7%] bottom-[14%] flex scale-90 items-end gap-[3px] sm:scale-100" aria-hidden="true">
                     <i class="block h-8 w-[3px] rounded bg-emerald-300/70 not-italic dark:bg-emerald-700/60" />
                     <i class="block h-5 w-[2px] rounded bg-emerald-300/70 not-italic dark:bg-emerald-700/60" />
                     <i class="block h-9 w-[3px] rounded bg-emerald-400/70 not-italic dark:bg-emerald-600/60" />
@@ -109,8 +109,8 @@ function toggleTema() {
                     <i class="block h-5 w-[2px] rounded bg-emerald-300/70 not-italic dark:bg-emerald-700/60" />
                     <i class="block h-7 w-[3px] rounded bg-emerald-400/70 not-italic dark:bg-emerald-600/60" />
                 </span>
-                <span class="anim-apung absolute top-[10%] right-[12%] hidden text-2xl font-bold text-emerald-200 select-none sm:block dark:text-emerald-900">+</span>
-                <span class="anim-apung-lambat absolute bottom-[10%] left-[38%] hidden text-xl font-bold text-teal-200 select-none sm:block dark:text-teal-900">+</span>
+                <span class="anim-apung absolute top-[8%] right-[10%] text-2xl font-bold text-emerald-200 select-none dark:text-emerald-900">+</span>
+                <span class="anim-apung-lambat absolute bottom-[12%] left-[8%] text-xl font-bold text-teal-200 select-none dark:text-teal-900">+</span>
             </div>
             <button
                 type="button"
@@ -122,20 +122,24 @@ function toggleTema() {
                 <Sun v-if="isDark" class="h-5 w-5" />
                 <Moon v-else class="h-5 w-5" />
             </button>
-            <div class="anim-masuk-kartu relative w-full max-w-md overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-lg shadow-emerald-100" style="animation-delay: 0.15s">
+            <div class="relative z-10 flex w-full max-w-md flex-col">
+            <div class="anim-masuk mb-3 text-center lg:hidden">
+                <p class="text-[11px] font-semibold tracking-widest text-emerald-600 uppercase dark:text-emerald-300">Selamat Datang di</p>
+                <p class="mt-0.5 bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent dark:from-emerald-300 dark:to-teal-200">Kasir VOLTIX</p>
+            </div>
+            <div class="anim-masuk-kartu relative w-full overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-xl shadow-emerald-200/60" style="animation-delay: 0.15s">
+                <div aria-hidden="true" class="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-300" />
                 <!-- Kilau menyapu kartu -->
                 <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
                     <span class="anim-kilat absolute inset-y-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-emerald-200/50 to-transparent dark:via-emerald-800/40" />
                 </div>
                 <!-- Header -->
                 <div class="flex flex-col items-center px-8 pt-8 pb-6 text-center">
-                    <p class="text-sm font-semibold tracking-widest text-emerald-600 uppercase dark:text-emerald-300">
+                    <img src="/logo-voltix-mark.png" alt="VOLTIX" class="anim-apung h-20 w-20 rounded-2xl object-cover shadow-md" style="animation-duration: 5s" />
+                    <p class="mt-3 text-sm font-semibold tracking-widest text-emerald-600 uppercase dark:text-emerald-300">
                         Selamat Datang
                     </p>
-                    <div class="mt-1 text-4xl font-extrabold tracking-tight">
-                        <span class="bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent dark:from-emerald-300 dark:to-teal-200">VOLTIX</span><span class="text-amber-400">.</span>
-                    </div>
-                    <p class="mt-2 text-sm text-neutral-500">
+                    <p class="mt-1 text-sm text-neutral-500">
                         Masuk untuk mulai kasir
                     </p>
                 </div>
@@ -221,10 +225,11 @@ function toggleTema() {
 
                         <Button
                             type="submit"
-                            class="mt-2 w-full bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
+                            class="relative mt-2 w-full overflow-hidden rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-300 transition hover:brightness-110 active:scale-[0.98]"
                             :disabled="processing"
                             data-test="login-button"
                         >
+                            <span aria-hidden="true" class="anim-kilat pointer-events-none absolute inset-y-0 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/30 to-transparent" />
                             <Spinner v-if="processing" />
                             <template v-else>
                                 LOGIN
@@ -237,6 +242,7 @@ function toggleTema() {
                         © {{ tahun }} VOLTIX v1.0
                     </p>
                 </div>
+            </div>
             </div>
 
             <!-- Teks berjalan produk (tampil di HP; desktop sudah ada di panel kiri) -->

@@ -107,8 +107,9 @@ const badgeAksi = (a: string) =>
                 Belum ada aktivitas tercatat.
             </div>
             <div v-else class="mt-3">
-                <div class="space-y-2 sm:hidden">
-                    <div v-for="(r, i) in rows" :key="i" class="rounded-lg border border-neutral-100 px-3 py-2.5 text-sm">
+                <div class="tl sm:hidden">
+                    <div v-for="(r, i) in rows" :key="i" class="tl-item text-sm">
+                        <span class="tl-titik" :class="r.aksi === 'tambah' ? 'hijau' : r.aksi === 'edit' ? 'biru' : 'merah'" />
                         <div class="flex items-center justify-between gap-2">
                             <p class="truncate font-semibold text-neutral-700">{{ r.aktor }}</p>
                             <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold capitalize" :class="badgeAksi(r.aksi)">{{ r.aksi }}</span>

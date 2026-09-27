@@ -78,7 +78,16 @@ const bintangHeader = [
 ];
 
 function gantiSekolah(id: number | 'semua') {
-    router.post('/sekolah-aktif', { id_sekolah: id }, { preserveScroll: true });
+    router.post('/sekolah-aktif', { id_sekolah: id }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            sekolahTerbuka.value = false;
+            // Muat ulang halaman agar seluruh data ikut ganti sekolah
+            // tanpa perlu refresh manual. State lokal halaman dimuat fresh;
+            // keranjang kasir pulih otomatis dari penyimpanan lokal.
+            router.visit(page.url, { preserveScroll: true, preserveState: false });
+        },
+    });
 }
 
 type NotifItem = {
@@ -89,6 +98,7 @@ type NotifItem = {
     warna: string;
 };
 const notifTerbuka = ref(false);
+const sekolahTerbuka = ref(false);
 const notifItems = ref<NotifItem[]>([]);
 const notifTotal = ref(0);
 const ikonMap: Record<string, unknown> = {
@@ -114,7 +124,7 @@ watch(notifTerbuka, (buka) => {
 
 <template>
     <header
-        class="anim-header-masuk relative flex h-16 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-white/15 bg-sidebar px-4 text-white transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6"
+        class="anim-header-masuk relative flex h-16 shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-white/15 bg-gradient-to-r from-teal-700 via-[#0d9488] to-teal-700 px-4 text-white shadow-[0_2px_16px_-4px_rgba(13,148,136,0.4)] transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6 dark:from-[#0c0c0e] dark:via-[#141418] dark:to-[#0c0c0e] dark:shadow-none"
     >
         <div aria-hidden="true" class="pointer-events-none absolute inset-0">
             <span
@@ -126,7 +136,7 @@ watch(notifTerbuka, (buka) => {
         </div>
         <div class="relative flex min-w-0 items-center gap-2">
             <SidebarTrigger class="-ml-1 shrink-0 rounded-full text-white/80 transition hover:bg-white/10 hover:text-white" />
-            <DropdownMenu v-if="bisaPindah">
+            <DropdownMenu v-if="bisaPindah" v-model:open="sekolahTerbuka">
                 <DropdownMenuTrigger as-child>
                     <button
                         type="button"

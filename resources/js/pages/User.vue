@@ -86,6 +86,7 @@ function terapkanFilter() {
 // ---------- Form tambah/edit ----------
 const showForm = ref(false);
 const editRow = ref<UserRow | null>(null);
+const errSekolah = ref('');
 const f = reactive({
     id_sekolah: '' as string | number,
     id_role: '' as string | number,
@@ -110,6 +111,11 @@ function bukaEdit(r: UserRow) {
     showForm.value = true;
 }
 function simpan() {
+    errSekolah.value = '';
+    if (props.is_super_admin && f.id_sekolah === '') {
+        errSekolah.value = 'Pilih sekolah untuk user ini.';
+        return;
+    }
     const payload: Record<string, unknown> = {
         id_role: Number(f.id_role),
         nama_lengkap: f.nama_lengkap,
@@ -201,7 +207,7 @@ onMounted(() => muat());
             <div v-else-if="list.data.length === 0" class="mt-3 rounded-lg bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-400">Belum ada user.</div>
             <div v-else class="mt-3">
                 <div class="space-y-2 sm:hidden">
-                    <div v-for="(r, i) in list.data" :key="r.id_user" class="rounded-lg border border-neutral-100 px-3 py-2.5 text-sm">
+                    <div v-for="(r, i) in list.data" :key="r.id_user" class="rounded-lg border border-neutral-100 border-l-4 px-3 py-2.5 text-sm" :class="r.is_active ? 'border-l-green-500' : 'border-l-neutral-300'">
                         <div class="flex items-center justify-between gap-2">
                             <p class="truncate font-semibold text-neutral-900">{{ r.nama_lengkap }}</p>
                             <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" :class="r.is_active ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'">{{ r.is_active ? 'Active' : 'Nonaktif' }}</span>
@@ -273,9 +279,10 @@ onMounted(() => muat());
                 <div v-if="is_super_admin">
                     <Label>Sekolah (Tenant)</Label>
                     <select v-model="f.id_sekolah" class="mt-1.5 w-full h-9 rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20">
-                        <option value="">-- Sekolah saya --</option>
+                        <option value="">-- Pilih sekolah --</option>
                         <option v-for="s in sekolah_list" :key="s.id_sekolah" :value="s.id_sekolah">{{ s.nama_sekolah }}</option>
                     </select>
+                    <InputError :message="errSekolah || formErrors.id_sekolah" />
                 </div>
                 <div><Label>Nama Lengkap</Label><Input v-model="f.nama_lengkap" class="mt-1.5" /><InputError :message="formErrors.nama_lengkap" /></div>
                 <div><Label>Username</Label><Input v-model="f.username" class="mt-1.5" autocomplete="off" /><InputError :message="formErrors.username" /></div>
