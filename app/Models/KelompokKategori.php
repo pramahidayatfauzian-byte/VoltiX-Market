@@ -29,6 +29,10 @@ class KelompokKategori extends Model
             return $query;
         }
 
-        return $query->where($this->getTable().'.id_sekolah', $idSekolah);
+        // Kelompok milik tenant ATAU global (id_sekolah null = milik bersama).
+        return $query->where(function ($q) use ($idSekolah) {
+            $q->where($this->getTable().'.id_sekolah', $idSekolah)
+                ->orWhereNull($this->getTable().'.id_sekolah');
+        });
     }
 }

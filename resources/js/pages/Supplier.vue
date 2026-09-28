@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { Search, X } from '@lucide/vue';
+import { EllipsisVertical, Search, X } from '@lucide/vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -133,9 +134,18 @@ onMounted(() => { muatSup(); });
                             <td class="py-2 pr-2 font-medium text-neutral-900">{{ r.nama }}</td>
                             <td class="py-2 pr-2 text-neutral-600">{{ r.no_telepon ?? '-' }}</td>
                             <td class="max-w-60 truncate py-2 pr-2 text-neutral-600">{{ r.alamat_supplier ?? '-' }}</td>
-                            <td class="py-2 text-center whitespace-nowrap">
-                                <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100" @click="bukaEditSup(r)">Edit</button>
-                                <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" @click="hapusSup(r.id_supplier)">Hapus</button>
+                            <td class="py-2 text-center">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger as-child>
+                                        <button type="button" aria-label="Aksi" title="Aksi" class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-emerald-700">
+                                            <EllipsisVertical class="h-5 w-5" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" class="w-44">
+                                        <DropdownMenuItem @click="bukaEditSup(r)">Edit</DropdownMenuItem>
+                                        <DropdownMenuItem class="text-red-600 focus:text-red-600" @click="hapusSup(r.id_supplier)">Hapus</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </td>
                         </tr>
                     </tbody>

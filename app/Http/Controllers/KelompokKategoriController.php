@@ -66,6 +66,10 @@ class KelompokKategoriController extends Controller
         $kelompok = KelompokKategori::tenant($request->user()->id_sekolah, $this->isDeveloper($request))
             ->findOrFail($id);
 
+        if (! $this->isDeveloper($request) && $kelompok->id_sekolah === null) {
+            return back()->withErrors(['nama_kelompok' => 'Kelompok bersama hanya bisa diubah developer.']);
+        }
+
         $v = $request->validate([
             'nama_kelompok' => ['required', 'string', 'max:100'],
         ]);
@@ -80,6 +84,10 @@ class KelompokKategoriController extends Controller
         $this->authorizeManage($request);
         $kelompok = KelompokKategori::tenant($request->user()->id_sekolah, $this->isDeveloper($request))
             ->findOrFail($id);
+
+        if (! $this->isDeveloper($request) && $kelompok->id_sekolah === null) {
+            return back()->withErrors(['kelompok' => 'Kelompok bersama hanya bisa dihapus developer.']);
+        }
 
         // Cek SEMUA baris (termasuk yang terhapus-lembut) karena FK RESTRICT
         // database tetap menahan walau datanya sudah dihapus lembut.

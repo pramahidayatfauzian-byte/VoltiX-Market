@@ -604,10 +604,19 @@ function salinBarcode() {
                             <td class="py-2 pr-2 text-neutral-500">{{ (kList.current_page - 1) * 10 + i + 1 }}</td>
                             <td class="py-2 pr-2 font-medium text-neutral-900">{{ r.nama }}</td>
                             <td class="py-2 pr-2 text-neutral-600">{{ r.kelompok?.nama_kelompok ?? '-' }}</td>
-                            <td class="py-2 text-center whitespace-nowrap">
+                            <td class="py-2 text-center">
                                 <template v-if="bisaKelola">
-                                    <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100" @click="bukaEditKat(r)">Edit</button>
-                                    <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" @click="hapusKat(r.id_kategori)">Hapus</button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <button type="button" aria-label="Aksi" title="Aksi" class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-emerald-700">
+                                                <EllipsisVertical class="h-5 w-5" />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" class="w-44">
+                                            <DropdownMenuItem @click="bukaEditKat(r)">Edit</DropdownMenuItem>
+                                            <DropdownMenuItem class="text-red-600 focus:text-red-600" @click="hapusKat(r.id_kategori)">Hapus</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </template>
                                 <span v-else class="text-xs text-neutral-300">—</span>
                             </td>
@@ -667,10 +676,19 @@ function salinBarcode() {
                             <td class="py-2 pr-2 text-neutral-500">{{ (gList.current_page - 1) * 10 + i + 1 }}</td>
                             <td class="py-2 pr-2 font-medium text-neutral-900">{{ r.nama_kelompok }}</td>
                             <td class="py-2 pr-2 text-neutral-600">{{ r.sekolah?.nama_sekolah ?? '-' }}</td>
-                            <td class="py-2 text-center whitespace-nowrap">
+                            <td class="py-2 text-center">
                                 <template v-if="bisaKelola">
-                                    <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100" @click="bukaEditKel(r)">Edit</button>
-                                    <button type="button" class="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" @click="hapusKel(r.id)">Hapus</button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <button type="button" aria-label="Aksi" title="Aksi" class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-emerald-700">
+                                                <EllipsisVertical class="h-5 w-5" />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" class="w-44">
+                                            <DropdownMenuItem @click="bukaEditKel(r)">Edit</DropdownMenuItem>
+                                            <DropdownMenuItem class="text-red-600 focus:text-red-600" @click="hapusKel(r.id)">Hapus</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </template>
                                 <span v-else class="text-xs text-neutral-300">—</span>
                             </td>

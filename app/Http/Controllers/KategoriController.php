@@ -26,6 +26,17 @@ class KategoriController extends Controller
         }
     }
 
+    /** Baris bersama (tanpa kelompok / kelompok global) hanya boleh diubah developer. */
+    private function isGlobalKategori(Kategori $kategori): bool
+    {
+        if ($kategori->id_kelompok === null) {
+            return true;
+        }
+        $kategori->loadMissing('kelompok:id,id_sekolah');
+
+        return ! $kategori->kelompok || $kategori->kelompok->id_sekolah === null;
+    }
+
     /** GET /kategori/data */
     public function data(Request $request)
     {
@@ -73,6 +84,10 @@ class KategoriController extends Controller
             ->tenant($request->user()->id_sekolah, $this->isDeveloper($request))
             ->findOrFail($id);
 
+        if (! $this->isDeveloper($request) && $this->isGlobalKategori($kategori)) {
+            return back()->withErrors(['nama' => 'Kategori bersama hanya bisa diubah developer.']);
+        }
+
         $v = $request->validate([
             'id_kelompok' => ['nullable', 'integer', 'exists:tb_kelompok_kategori,id'],
             'nama' => ['required', 'string', 'max:100'],
@@ -97,6 +112,10 @@ class KategoriController extends Controller
         $kategori = Kategori::valid()
             ->tenant($request->user()->id_sekolah, $this->isDeveloper($request))
             ->findOrFail($id);
+
+        if (! $this->isDeveloper($request) && $this->isGlobalKategori($kategori)) {
+            return back()->withErrors(['kategori' => 'Kategori bersama hanya bisa dihapus developer.']);
+        }
 
         // Cek SEMUA baris (termasuk yang terhapus-lembut) karena FK RESTRICT
         // database tetap menahan walau datanya sudah dihapus lembut.

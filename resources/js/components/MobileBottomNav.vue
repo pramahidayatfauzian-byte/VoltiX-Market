@@ -30,8 +30,10 @@ const { isCurrentUrl } = useCurrentUrl();
 
 const role = computed(() => (page.props.auth.user?.role as string | undefined) ?? '');
 const isKasir = computed(() => role.value === 'kasir');
-// Super admin & developer tidak menyentuh penjualan: menu terbatas.
-const isTanpaKasir = computed(() => ['developer', 'super admin'].includes(role.value));
+// Developer tidak menyentuh penjualan: menu terbatas.
+const isTanpaKasir = computed(() => role.value === 'developer');
+// Admin & super admin: menu lengkap kecuali Kasir / Transaksi.
+const isTanpaTransaksi = computed(() => ['admin', 'super admin'].includes(role.value));
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -58,6 +60,7 @@ const navGroups = computed<NavGroup[]>(() => {
 
     const saring = (items: NavItem[]) => {
         if (isTanpaKasir.value) return items.filter((m) => menuTanpaKasir.has(m.title));
+        if (isTanpaTransaksi.value) return items.filter((m) => m.title !== 'Kasir / Transaksi');
         if (isKasir.value) return items.filter((m) => izinKasir.has(m.title));
         return items;
     };
@@ -74,9 +77,11 @@ const datar = computed(() => navGroups.value.flatMap((g) => g.items));
 // 4 menu utama + 1 tombol "Lainnya" = 5 di bar bawah.
 // Urutan mobile: Beranda, Produk, Kasir (tengah & diperbesar), Riwayat.
 // Riwayat = /laporan (khusus kasir disembunyikan karena backend 403, fallback ke Pelanggan).
-// Developer & super admin tanpa penjualan: hanya Beranda (+ Lainnya berisi User & Pengaturan).
+// Developer tanpa penjualan: hanya Beranda (+ Lainnya berisi User & Pengaturan).
+// Admin & super admin tanpa Kasir: Beranda, Produk, Riwayat, Pembelian.
 const judulUtama = computed(() => {
     if (isTanpaKasir.value) return ['Dashboard'];
+    if (isTanpaTransaksi.value) return ['Dashboard', 'Produk', 'Riwayat', 'Pembelian'];
     return isKasir.value
         ? ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Pelanggan']
         : ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Riwayat'];

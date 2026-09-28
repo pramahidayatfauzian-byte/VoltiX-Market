@@ -36,12 +36,15 @@ class Kategori extends Model
             return $query;
         }
 
-        // Kategori milik tenant jika kelompoknya milik tenant, atau tanpa kelompok (shared)
+        // Kategori milik tenant jika tanpa kelompok (shared), kelompoknya milik
+        // tenant, ATAU kelompoknya global (milik bersama semua sekolah).
         return $query->where(function ($q) use ($idSekolah) {
             $q->whereNull('tb_kategori.id_kelompok')
                 ->orWhereIn('tb_kategori.id_kelompok', function ($sub) use ($idSekolah) {
                     $sub->select('id')->from('tb_kelompok_kategori')
-                        ->where('id_sekolah', $idSekolah);
+                        ->where(function ($w) use ($idSekolah) {
+                            $w->where('id_sekolah', $idSekolah)->orWhereNull('id_sekolah');
+                        });
                 });
         });
     }

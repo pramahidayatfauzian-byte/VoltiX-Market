@@ -36,8 +36,10 @@ const sekolahLogo = computed(
 
 const role = computed(() => (page.props.auth.user?.role as string | undefined) ?? '');
 const isKasir = computed(() => role.value === 'kasir');
-// Super admin & developer tidak menyentuh penjualan: menu terbatas.
-const isTanpaKasir = computed(() => ['developer', 'super admin'].includes(role.value));
+// Developer tidak menyentuh penjualan: menu terbatas.
+const isTanpaKasir = computed(() => role.value === 'developer');
+// Admin & super admin: menu lengkap kecuali Kasir / Transaksi.
+const isTanpaTransaksi = computed(() => ['admin', 'super admin'].includes(role.value));
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -66,10 +68,12 @@ const navGroups = computed<NavGroup[]>(() => {
     // Pembatasan aksi dilakukan di backend + tombol frontend:
     // - Admin: User read-only (tanpa edit/reset), Pengaturan 403.
     // - Kasir: hanya menu terbatas.
-    // - Developer & super admin: tanpa menu penjualan.
+    // - Developer: tanpa menu penjualan.
+    // - Admin & super admin: tanpa menu Kasir / Transaksi.
 
     const saring = (items: NavItem[]) => {
         if (isTanpaKasir.value) return items.filter((m) => menuTanpaKasir.has(m.title));
+        if (isTanpaTransaksi.value) return items.filter((m) => m.title !== 'Kasir / Transaksi');
         if (isKasir.value) return items.filter((m) => izinKasir.has(m.title));
         return items;
     };

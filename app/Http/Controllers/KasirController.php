@@ -143,6 +143,7 @@ class KasirController extends Controller
                         'barcode' => $master['barcode'],
                         'nama' => $master['nama'],
                         'id_kategori' => $kategori->id_kategori,
+                        'id_kelompok_kategori' => $kategori->id_kelompok,
                         'satuan' => $master['satuan'] ?? 'pcs',
                         'harga_beli' => (int) round($master['harga'] * 0.8),
                         'harga_jual' => (int) $master['harga'],
@@ -174,6 +175,7 @@ class KasirController extends Controller
                             'barcode' => $searchRaw,
                             'nama' => $off['nama'],
                             'id_kategori' => $kategori->id_kategori,
+                            'id_kelompok_kategori' => $kategori->id_kelompok,
                             'satuan' => $off['satuan'] ?? 'pcs',
                             'harga_beli' => (int) round($defaultHarga * 0.8),
                             'harga_jual' => $defaultHarga,
@@ -257,6 +259,9 @@ class KasirController extends Controller
             'barcode' => $barcodeBersih,
             'nama' => $validated['nama'],
             'id_kategori' => $validated['id_kategori'] ?? null,
+            'id_kelompok_kategori' => isset($validated['id_kategori'])
+                ? Kategori::where('id_kategori', $validated['id_kategori'])->value('id_kelompok')
+                : null,
             'satuan' => $validated['satuan'] ?: 'pcs',
             'harga_beli' => (int) round(((float) $validated['harga_jual']) * 0.8),
             'harga_jual' => $validated['harga_jual'],

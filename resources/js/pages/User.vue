@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { KeyRound, Search, X } from '@lucide/vue';
+import { EllipsisVertical, KeyRound, Search, X } from '@lucide/vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -246,11 +247,24 @@ onMounted(() => muat());
                                     {{ r.is_active ? 'Active' : 'Nonaktif' }}
                                 </span>
                             </td>
-                            <td class="py-2 text-center whitespace-nowrap">
-                                <button v-if="bisaKelola" type="button" class="rounded-md px-2 py-1 text-xs font-medium text-neutral-700 hover:bg-neutral-100" @click="bukaEdit(r)">Edit</button>
-                                <button v-if="bisaKelola" type="button" class="rounded-md px-2 py-1 text-xs font-medium text-amber-600 hover:bg-amber-50" @click="toggle(r.id_user)">{{ r.is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
-                                <button v-if="bisaReset" type="button" class="rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50" @click="bukaReset(r)">Reset PW</button>
-                                <button v-if="bisaKelola" type="button" class="rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" @click="hapus(r.id_user)">Hapus</button>
+                            <td class="py-2 text-center">
+                                <DropdownMenu v-if="bisaKelola || bisaReset">
+                                    <DropdownMenuTrigger as-child>
+                                        <button type="button" aria-label="Aksi" title="Aksi" class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-emerald-700">
+                                            <EllipsisVertical class="h-5 w-5" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" class="w-44">
+                                        <DropdownMenuItem v-if="bisaKelola" @click="bukaEdit(r)">Edit</DropdownMenuItem>
+                                        <DropdownMenuItem v-if="bisaKelola" @click="toggle(r.id_user)">{{ r.is_active ? 'Nonaktifkan' : 'Aktifkan' }}</DropdownMenuItem>
+                                        <DropdownMenuItem v-if="bisaReset" @click="bukaReset(r)">Reset PW</DropdownMenuItem>
+                                        <template v-if="bisaKelola">
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem class="text-red-600 focus:text-red-600" @click="hapus(r.id_user)">Hapus</DropdownMenuItem>
+                                        </template>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <span v-else class="text-xs text-neutral-300">—</span>
                             </td>
                         </tr>
                     </tbody>
