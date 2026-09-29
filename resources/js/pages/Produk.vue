@@ -60,12 +60,11 @@ const pStatus = ref('semua');
 const pList = ref<Paginate<BarangRow>>({ data: [], current_page: 1, last_page: 1, total: 0 });
 const pPage = ref(1);
 const pLoading = ref(false);
-let pTimer: ReturnType<typeof setTimeout> | undefined;
 
-watch([pSearch], () => {
-    clearTimeout(pTimer);
-    pTimer = setTimeout(() => { pPage.value = 1; muatProduk(); }, 400);
-});
+function terapkanProduk() {
+    pPage.value = 1;
+    muatProduk();
+}
 
 async function muatProduk() {
     pLoading.value = true;
@@ -290,8 +289,10 @@ const kSearch = ref('');
 const kList = ref<Paginate<KatRow>>({ data: [], current_page: 1, last_page: 1, total: 0 });
 const kPage = ref(1);
 const kLoading = ref(false);
-let kTimer: ReturnType<typeof setTimeout> | undefined;
-watch(kSearch, () => { clearTimeout(kTimer); kTimer = setTimeout(() => { kPage.value = 1; muatKategori(); }, 400); });
+function terapkanKategori() {
+    kPage.value = 1;
+    muatKategori();
+}
 async function muatKategori() {
     kLoading.value = true;
     try {
@@ -320,8 +321,10 @@ const gSearch = ref('');
 const gList = ref<Paginate<KelRow>>({ data: [], current_page: 1, last_page: 1, total: 0 });
 const gPage = ref(1);
 const gLoading = ref(false);
-let gTimer: ReturnType<typeof setTimeout> | undefined;
-watch(gSearch, () => { clearTimeout(gTimer); gTimer = setTimeout(() => { gPage.value = 1; muatKelompok(); }, 400); });
+function terapkanKelompok() {
+    gPage.value = 1;
+    muatKelompok();
+}
 async function muatKelompok() {
     gLoading.value = true;
     try {
@@ -447,9 +450,12 @@ function salinBarcode() {
         <div v-if="tab === 'produk'" class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex flex-1 flex-col gap-2 sm:flex-row">
-                    <div class="relative w-full sm:max-w-xs">
-                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                        <Input v-model="pSearch" placeholder="Cari produk..." class="pl-9" />
+                    <div class="flex w-full gap-2 sm:max-w-md">
+                        <div class="relative flex-1">
+                            <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                            <Input v-model="pSearch" placeholder="Cari produk... (Enter)" class="pl-9" @keydown.enter="terapkanProduk()" />
+                        </div>
+                        <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanProduk()">Cari</Button>
                     </div>
                     <select v-model="pKategori" class="h-9 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 sm:w-auto" @change="pPage = 1; muatProduk()">
                         <option value="">Semua Kategori</option>
@@ -505,7 +511,7 @@ function salinBarcode() {
                     <thead>
                         <tr class="border-b border-neutral-100 text-xs text-neutral-400">
                             <th class="py-2 pr-2 font-medium">Produk</th>
-                            <th class="py-2 pr-2 font-medium">Kategori</th>
+                            <th class="py-2 pr-2 font-medium">Kategori / Supplier</th>
                             <th class="py-2 pr-2 text-right font-medium">Harga</th>
                             <th class="py-2 pr-2 text-center font-medium">Stok</th>
                             <th class="py-2 text-center font-medium">Aksi</th>
@@ -523,7 +529,10 @@ function salinBarcode() {
                                     </span>
                                 </div>
                             </td>
-                            <td class="py-2 pr-2 text-neutral-600">{{ r.kategori?.nama ?? '-' }}</td>
+                            <td class="py-2 pr-2">
+                                <p class="text-neutral-600">{{ r.kategori?.nama ?? '-' }}</p>
+                                <p class="mt-0.5 truncate text-xs text-neutral-400">{{ r.supplier?.nama ?? '-' }}</p>
+                            </td>
                             <td class="py-2 pr-2 text-right">
                                 <span class="font-semibold whitespace-nowrap">{{ formatRp(r.harga_jual) }}</span>
                                 <span class="mt-0.5 block text-[11px] font-semibold" :class="r.is_active ? 'text-green-600' : 'text-neutral-400'">{{ r.is_active ? 'Aktif' : 'Nonaktif' }}</span>
@@ -566,9 +575,12 @@ function salinBarcode() {
         <!-- TAB KATEGORI -->
         <div v-else-if="tab === 'kategori'" class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="relative w-full sm:max-w-xs">
-                    <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                    <Input v-model="kSearch" placeholder="Cari kategori..." class="pl-9" />
+                <div class="flex w-full gap-2 sm:max-w-md">
+                    <div class="relative flex-1">
+                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                        <Input v-model="kSearch" placeholder="Cari kategori... (Enter)" class="pl-9" @keydown.enter="terapkanKategori()" />
+                    </div>
+                    <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanKategori()">Cari</Button>
                 </div>
                 <Button v-if="bisaKelola" type="button" class="h-11 w-full bg-emerald-600 hover:bg-emerald-700 sm:w-auto" @click="bukaTambahKat">+ Tambah Kategori</Button>
             </div>
@@ -638,9 +650,12 @@ function salinBarcode() {
         <!-- TAB KELOMPOK -->
         <div v-else class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="relative w-full sm:max-w-xs">
-                    <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                    <Input v-model="gSearch" placeholder="Cari kelompok..." class="pl-9" />
+                <div class="flex w-full gap-2 sm:max-w-md">
+                    <div class="relative flex-1">
+                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                        <Input v-model="gSearch" placeholder="Cari kelompok... (Enter)" class="pl-9" @keydown.enter="terapkanKelompok()" />
+                    </div>
+                    <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanKelompok()">Cari</Button>
                 </div>
                 <Button v-if="bisaKelola" type="button" class="h-11 w-full bg-emerald-600 hover:bg-emerald-700 sm:w-auto" @click="bukaTambahKel">+ Tambah Kelompok</Button>
             </div>

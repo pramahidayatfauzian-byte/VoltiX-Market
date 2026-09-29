@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { History, Search } from '@lucide/vue';
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref } from 'vue';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 defineOptions({
@@ -26,12 +27,6 @@ const curPage = ref(1);
 const lastPage = ref(1);
 const total = ref(0);
 const loading = ref(false);
-let timer: ReturnType<typeof setTimeout> | undefined;
-
-watch(fSearch, () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { curPage.value = 1; muat(); }, 400);
-});
 
 async function muat() {
     loading.value = true;
@@ -84,9 +79,12 @@ const badgeAksi = (a: string) =>
 
         <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div class="flex flex-col gap-2 md:flex-row">
-                <div class="relative w-full md:max-w-xs">
-                    <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                    <Input v-model="fSearch" placeholder="Cari aktivitas / user..." class="pl-9" />
+                <div class="flex w-full gap-2 md:max-w-md">
+                    <div class="relative flex-1">
+                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                        <Input v-model="fSearch" placeholder="Cari aktivitas / user... (Enter)" class="pl-9" @keydown.enter="terapkan()" />
+                    </div>
+                    <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkan()">Cari</Button>
                 </div>
                 <div class="grid grid-cols-2 gap-2 md:flex">
                 <select v-model="fModul" class="h-9 w-full min-w-0 truncate rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 md:w-auto" @change="terapkan()">

@@ -161,11 +161,13 @@ const kategoriDipilih = ref<number | null>(null);
 const produkHasil = ref<Produk[]>(props.produk_list ? [...props.produk_list] : []);
 const produkLoading = ref(false);
 const viewMode = ref<'grid' | 'list'>('grid');
-let produkTimer: ReturnType<typeof setTimeout> | undefined;
 
-watch([produkKeyword, kategoriDipilih], ([keyword, kat]) => {
-    clearTimeout(produkTimer);
-    produkTimer = setTimeout(() => cariProduk(keyword, kat), 250);
+function terapkanCariProduk() {
+    cariProduk(produkKeyword.value, kategoriDipilih.value);
+}
+
+watch(kategoriDipilih, (kat) => {
+    cariProduk(produkKeyword.value, kat);
 });
 
 async function cariProduk(keyword: string, idKategori?: number | null) {
@@ -420,18 +422,17 @@ const pelangganKeyword = ref('');
 const pelangganHasil = ref<PelangganOpt[]>([]);
 const pelangganDipilih = ref<PelangganOpt | null>(null);
 const pelangganLoading = ref(false);
-let pelangganTimer: ReturnType<typeof setTimeout> | undefined;
 
-watch(pelangganKeyword, (v) => {
-    clearTimeout(pelangganTimer);
+function terapkanCariPelanggan() {
+    const v = pelangganKeyword.value;
     if (!v.trim()) {
         pelangganHasil.value = [];
         pelangganLoading.value = false;
         return;
     }
     pelangganLoading.value = true;
-    pelangganTimer = setTimeout(() => cariPelanggan(v), 300);
-});
+    void cariPelanggan(v);
+}
 
 async function cariPelanggan(keyword: string) {
     try {
@@ -1838,6 +1839,10 @@ function cetakStruk() {
                                 <X class="h-4 w-4" />
                             </button>
                         </div>
+                        <Button type="button" class="shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" title="Cari di katalog (Enter untuk tambah langsung)" @click="terapkanCariProduk()">
+                            <Search class="h-4 w-4" />
+                            <span class="hidden sm:inline">Cari</span>
+                        </Button>
                         <Button type="button" variant="outline" class="shrink-0 border-emerald-200 text-emerald-700 hover:bg-emerald-50" @click="bukaScan()" title="Scan barcode dengan kamera (F3)">
                             <ScanBarcode class="h-4 w-4" />
                             <span class="hidden sm:inline">Scan (F3)</span>
@@ -2266,27 +2271,33 @@ function cetakStruk() {
                         <UserIcon class="h-4 w-4" /> Pelanggan (Opsional)
                     </h2>
                     <div v-if="!pelangganDipilih" class="relative mt-2">
-                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                        <Input
-                            v-model="pelangganKeyword"
-                            placeholder="Cari nama / telepon..."
-                            class="pr-9 pl-9"
-                            autocomplete="off"
-                            @keydown.escape="bersihkanCariPelanggan()"
-                            @focus="pelangganKeAtas()"
-                        />
-                        <span v-if="pelangganLoading" class="absolute top-1/2 right-3 -translate-y-1/2">
-                            <Loader2 class="h-4 w-4 animate-spin text-emerald-600" />
-                        </span>
-                        <button
-                            v-else-if="pelangganKeyword"
-                            type="button"
-                            class="absolute top-1/2 right-2.5 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
-                            aria-label="Bersihkan pencarian"
-                            @click="bersihkanCariPelanggan()"
-                        >
-                            <X class="h-3.5 w-3.5" />
-                        </button>
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                                <Input
+                                    v-model="pelangganKeyword"
+                                    placeholder="Cari nama / telepon... (Enter)"
+                                    class="pr-9 pl-9"
+                                    autocomplete="off"
+                                    @keydown.enter="terapkanCariPelanggan()"
+                                    @keydown.escape="bersihkanCariPelanggan()"
+                                    @focus="pelangganKeAtas()"
+                                />
+                                <span v-if="pelangganLoading" class="absolute top-1/2 right-3 -translate-y-1/2">
+                                    <Loader2 class="h-4 w-4 animate-spin text-emerald-600" />
+                                </span>
+                                <button
+                                    v-else-if="pelangganKeyword"
+                                    type="button"
+                                    class="absolute top-1/2 right-2.5 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+                                    aria-label="Bersihkan pencarian"
+                                    @click="bersihkanCariPelanggan()"
+                                >
+                                    <X class="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                            <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanCariPelanggan()">Cari</Button>
+                        </div>
                         <div v-if="pelangganLoading" class="absolute bottom-full z-40 mb-1 w-full rounded-lg border border-neutral-200 bg-white px-3 py-3 text-center text-xs text-neutral-400 shadow-lg lg:top-full lg:bottom-auto lg:mt-1 lg:mb-0">
                             Mencari pelanggan...
                         </div>

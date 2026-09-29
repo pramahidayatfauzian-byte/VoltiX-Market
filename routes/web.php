@@ -10,9 +10,9 @@ use App\Http\Controllers\PembelianController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\SekolahAktifController;
-use App\Http\Controllers\PiutangController;
 use App\Http\Controllers\ReturController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\StokController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -49,6 +49,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('produk', [ProdukController::class, 'index'])->name('produk.index');
     Route::get('produk/data', [ProdukController::class, 'data'])->name('produk.data');
     Route::get('produk/lookup-barcode', [ProdukController::class, 'lookupBarcode'])->name('produk.lookup');
+
+    // Stok (ringkasan persediaan + arus masuk/keluar)
+    Route::get('stok', [StokController::class, 'index'])->name('stok.index');
+    Route::get('stok/data', [StokController::class, 'data'])->name('stok.data');
     Route::get('produk/{id}/riwayat', [ProdukController::class, 'riwayat'])->name('produk.riwayat');
     Route::get('produk/{id}', [ProdukController::class, 'show'])->name('produk.show');
     Route::post('produk', [ProdukController::class, 'store'])->name('produk.store');
@@ -96,11 +100,6 @@ Route::middleware(['auth'])->group(function () {
 
     // Notifikasi bell
     Route::get('notifikasi', [\App\Http\Controllers\NotifikasiController::class, 'index'])->name('notifikasi.index');
-
-    // Piutang (kredit belum bayar)
-    Route::get('piutang', [PiutangController::class, 'index'])->name('piutang.index');
-    Route::get('piutang/data', [PiutangController::class, 'data'])->name('piutang.data');
-    Route::post('piutang/{id}/lunasi', [PiutangController::class, 'lunasi'])->name('piutang.lunasi');
 
     // Retur penjualan & pembelian
     Route::get('retur', [ReturController::class, 'index'])->name('retur.index');

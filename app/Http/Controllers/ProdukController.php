@@ -17,10 +17,13 @@ class ProdukController extends Controller
         return ($request->user()->role?->nama_role === 'developer');
     }
 
-    /** Semua role boleh melihat produk; kasir hanya boleh melihat (lihat authorizeManage). */
+    /** Kasir tidak punya halaman produk (lihat/tambah lewat kasir saja). */
     private function authorizeAkses(Request $request): void
     {
-        // Developer global, super admin/admin/kasir per-sekolah — semua boleh lihat.
+        if (($request->user()->role?->nama_role ?? '') === 'kasir') {
+            abort(403, 'Kasir tidak dapat mengakses halaman produk.');
+        }
+        // Developer global, super admin/admin per-sekolah — semua boleh lihat.
     }
 
     /** Kasir hanya boleh melihat produk. */
@@ -86,6 +89,15 @@ class ProdukController extends Controller
                         ->orWhere('barcode', 'like', "%{$s}%")
                         ->orWhere('barcode', 'like', "%{$sRaw}%");
                 });
+            })
+            // Relevansi: barcode persis dulu, lalu nama persis, awalan, sisanya.
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $s = trim((string) $request->query('search'));
+                $sRaw = preg_replace('/\s+/', '', $s);
+                $q->orderByRaw(
+                    'CASE WHEN barcode = ? THEN 0 WHEN nama = ? THEN 1 WHEN barcode LIKE ? THEN 2 WHEN nama LIKE ? THEN 3 ELSE 4 END',
+                    [$sRaw, $s, $sRaw.'%', $s.'%']
+                );
             })
             ->when($request->filled('id_kategori'), fn ($q) => $q->where('id_kategori', $request->query('id_kategori')))
             ->when($request->query('status') === 'aktif', fn ($q) => $q->where('is_active', true))
@@ -274,12 +286,52 @@ class ProdukController extends Controller
         return null;
     }
 
+    /** Tolak produk yang sama (barcode / nama persis) agar tidak double input. */
+    private function cekDuplikat(int $sekolahId, ?string $barcode, ?string $nama, ?int $ignoreId = null): ?array
+    {
+        $barcodeBersih = $barcode ? trim(preg_replace('/\s+/', '', $barcode)) : '';
+        if ($barcodeBersih !== '') {
+            $ada = Barang::valid()
+                ->where('id_sekolah', $sekolahId)
+                ->when($ignoreId, fn ($q) => $q->where('id_barang', '!=', $ignoreId))
+                ->where(function ($w) use ($barcodeBersih) {
+                    $w->where('barcode', $barcodeBersih)
+                        ->orWhere('barcode', ltrim($barcodeBersih, '0'));
+                })
+                ->first(['nama']);
+            if ($ada) {
+                return ['barcode' => "Barcode sudah terdaftar pada produk \"{$ada->nama}\"."];
+            }
+        }
+
+        $namaBersih = $nama ? trim($nama) : '';
+        if ($namaBersih !== '') {
+            $sama = Barang::valid()
+                ->where('id_sekolah', $sekolahId)
+                ->when($ignoreId, fn ($q) => $q->where('id_barang', '!=', $ignoreId))
+                ->whereRaw('LOWER(TRIM(nama)) = ?', [mb_strtolower($namaBersih)])
+                ->exists();
+            if ($sama) {
+                return ['nama' => "Produk \"{$namaBersih}\" sudah terdaftar. Cari di daftar lalu edit bila perlu."];
+            }
+        }
+
+        return null;
+    }
+
     public function store(Request $request)
     {
         $this->authorizeManage($request);
         $v = $this->validateBarang($request);
         if ($err = $this->assertTenantFk($request, $v)) {
             return back()->withErrors(['id_kategori' => $err]);
+        }
+
+        $sekolahId = (int) ($this->isDeveloper($request)
+            ? ($v['id_sekolah'] ?? $request->user()->id_sekolah)
+            : $request->user()->id_sekolah);
+        if ($duplikat = $this->cekDuplikat($sekolahId, $v['barcode'] ?? null, $v['nama'] ?? null)) {
+            return back()->withErrors($duplikat)->withInput();
         }
 
         $foto = $request->hasFile('foto')
@@ -310,6 +362,9 @@ class ProdukController extends Controller
         $v = $this->validateBarang($request, $id);
         if ($err = $this->assertTenantFk($request, $v)) {
             return back()->withErrors(['id_kategori' => $err]);
+        }
+        if ($duplikat = $this->cekDuplikat((int) $barang->id_sekolah, $v['barcode'] ?? $barang->barcode, $v['nama'] ?? $barang->nama, $barang->id_barang)) {
+            return back()->withErrors($duplikat)->withInput();
         }
 
         if (! $this->isDeveloper($request)) {

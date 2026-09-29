@@ -56,12 +56,10 @@ const statusFilter = ref('semua');
 const list = ref<Paginate<UserRow>>({ data: [], current_page: 1, last_page: 1, total: 0 });
 const curPage = ref(1);
 const loading = ref(false);
-let timer: ReturnType<typeof setTimeout> | undefined;
-
-watch(search, () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => { curPage.value = 1; muat(); }, 400);
-});
+function terapkanCari() {
+    curPage.value = 1;
+    muat();
+}
 
 async function muat() {
     loading.value = true;
@@ -187,9 +185,12 @@ onMounted(() => muat());
         <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex flex-1 flex-col gap-2 sm:flex-row">
-                    <div class="relative w-full sm:max-w-xs">
-                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                        <Input v-model="search" placeholder="Cari user..." class="pl-9" />
+                    <div class="flex w-full gap-2 sm:max-w-md">
+                        <div class="relative flex-1">
+                            <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                            <Input v-model="search" placeholder="Cari user... (Enter)" class="pl-9" @keydown.enter="terapkanCari()" />
+                        </div>
+                        <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanCari()">Cari</Button>
                     </div>
                     <select v-model="roleFilter" class="h-9 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 sm:w-auto" @change="terapkanFilter()">
                         <option value="">Semua Role</option>

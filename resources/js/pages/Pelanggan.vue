@@ -42,12 +42,10 @@ const plSearch = ref('');
 const plList = ref<Paginate<PelangganOpt>>({ data: [], current_page: 1, last_page: 1, total: 0 });
 const plLoading = ref(false);
 const plPage = ref(1);
-let plTimer: ReturnType<typeof setTimeout> | undefined;
-
-watch(plSearch, () => {
-    clearTimeout(plTimer);
-    plTimer = setTimeout(() => { plPage.value = 1; muatPelanggan(); }, 400);
-});
+function terapkanPelanggan() {
+    plPage.value = 1;
+    muatPelanggan();
+}
 
 async function muatPelanggan() {
     plLoading.value = true;
@@ -131,9 +129,12 @@ onMounted(() => { muatPelanggan(); });
 
         <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="relative w-full sm:max-w-xs">
-                    <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                    <Input v-model="plSearch" placeholder="Cari nama / telepon / alamat..." class="pl-9" />
+                <div class="flex w-full gap-2 sm:max-w-md">
+                    <div class="relative flex-1">
+                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                        <Input v-model="plSearch" placeholder="Cari nama / telepon / alamat... (Enter)" class="pl-9" @keydown.enter="terapkanPelanggan()" />
+                    </div>
+                    <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanPelanggan()">Cari</Button>
                 </div>
                 <Button type="button" class="h-11 w-full bg-emerald-600 hover:bg-emerald-700 sm:w-auto" @click="bukaTambahPelanggan">+ Tambah Pelanggan</Button>
             </div>

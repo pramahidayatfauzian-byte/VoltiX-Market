@@ -35,8 +35,10 @@ const sSearch = ref('');
 const sList = ref<Paginate<SupRow>>({ data: [], current_page: 1, last_page: 1, total: 0 });
 const sPage = ref(1);
 const sLoading = ref(false);
-let sTimer: ReturnType<typeof setTimeout> | undefined;
-watch(sSearch, () => { clearTimeout(sTimer); sTimer = setTimeout(() => { sPage.value = 1; muatSup(); }, 400); });
+function terapkanSup() {
+    sPage.value = 1;
+    muatSup();
+}
 
 async function muatSup() {
     sLoading.value = true;
@@ -98,9 +100,12 @@ onMounted(() => { muatSup(); });
 
         <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="relative w-full sm:max-w-xs">
-                    <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                    <Input v-model="sSearch" placeholder="Cari supplier..." class="pl-9" />
+                <div class="flex w-full gap-2 sm:max-w-md">
+                    <div class="relative flex-1">
+                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                        <Input v-model="sSearch" placeholder="Cari supplier... (Enter)" class="pl-9" @keydown.enter="terapkanSup()" />
+                    </div>
+                    <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanSup()">Cari</Button>
                 </div>
                 <Button type="button" class="h-11 w-full bg-emerald-600 hover:bg-emerald-700 sm:w-auto" @click="bukaTambahSup">+ Tambah Supplier</Button>
             </div>

@@ -107,6 +107,13 @@ class KasirController extends Controller
                     }
                 });
             })
+            // Relevansi: barcode persis dulu, lalu nama persis, awalan, sisanya.
+            ->when($search !== '', function ($q) use ($search, $searchRaw) {
+                $q->orderByRaw(
+                    'CASE WHEN barcode = ? THEN 0 WHEN nama = ? THEN 1 WHEN barcode LIKE ? THEN 2 WHEN nama LIKE ? THEN 3 ELSE 4 END',
+                    [$searchRaw, $search, $searchRaw.'%', $search.'%']
+                );
+            })
             ->orderBy('nama')
             ->limit(100);
 

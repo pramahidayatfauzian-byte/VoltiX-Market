@@ -50,8 +50,10 @@ const bStatus = ref('');
 const bList = ref<Paginate<BeliRow>>({ data: [], current_page: 1, last_page: 1, total: 0 });
 const bPage = ref(1);
 const bLoading = ref(false);
-let bTimer: ReturnType<typeof setTimeout> | undefined;
-watch(bSearch, () => { clearTimeout(bTimer); bTimer = setTimeout(() => { bPage.value = 1; muatBeli(); }, 400); });
+function terapkanCariBeli() {
+    bPage.value = 1;
+    muatBeli();
+}
 
 async function muatBeli() {
     bLoading.value = true;
@@ -158,9 +160,12 @@ const formatTgl = (s: string | null) => {
         <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
             <div class="flex flex-col gap-2 xl:flex-row xl:items-center xl:justify-between">
                 <div class="flex flex-1 flex-col gap-2 md:flex-row md:flex-wrap">
-                    <div class="relative w-full md:max-w-55">
-                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-                        <Input v-model="bSearch" placeholder="Cari nomor pembelian..." class="pl-9" />
+                    <div class="flex w-full gap-2 md:max-w-xs">
+                        <div class="relative flex-1">
+                            <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                            <Input v-model="bSearch" placeholder="Cari nomor pembelian... (Enter)" class="pl-9" @keydown.enter="terapkanCariBeli()" />
+                        </div>
+                        <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanCariBeli()">Cari</Button>
                     </div>
                     <div class="grid grid-cols-2 gap-2 md:flex md:flex-wrap">
                     <input v-model="bMulai" type="date" class="h-9 w-full min-w-0 rounded-lg border border-gray-300 bg-gray-50 px-3 text-sm text-gray-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 md:w-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-70" @change="terapkanFilterBeli()" />

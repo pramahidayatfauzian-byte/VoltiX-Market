@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
+    Boxes,
     History,
     LayoutDashboard,
     LayoutGrid,
@@ -45,6 +46,7 @@ const navGroups = computed<NavGroup[]>(() => {
     ];
     const persediaan: NavItem[] = [
         { title: 'Produk', href: '/produk', icon: ShoppingBag },
+        { title: 'Stok', href: '/stok', icon: Boxes },
         { title: 'Pembelian', href: '/pembelian', icon: ShoppingCart },
         { title: 'Supplier', href: '/supplier', icon: Truck },
     ];
@@ -55,7 +57,7 @@ const navGroups = computed<NavGroup[]>(() => {
         { title: 'Pengaturan', href: '/pengaturan', icon: Settings },
     ];
 
-    const izinKasir = new Set(['Dashboard', 'Kasir / Transaksi', 'Produk', 'Pelanggan']);
+    const izinKasir = new Set(['Dashboard', 'Kasir / Transaksi', 'Pelanggan']);
     const menuTanpaKasir = new Set(['Dashboard', 'User', 'Pengaturan']);
 
     const saring = (items: NavItem[]) => {
@@ -79,11 +81,12 @@ const datar = computed(() => navGroups.value.flatMap((g) => g.items));
 // Riwayat = /laporan (khusus kasir disembunyikan karena backend 403, fallback ke Pelanggan).
 // Developer tanpa penjualan: hanya Beranda (+ Lainnya berisi User & Pengaturan).
 // Admin & super admin tanpa Kasir: Beranda, Produk, Riwayat, Pembelian.
+// Kasir tanpa Produk/Stok: Beranda, Kasir, Pelanggan.
 const judulUtama = computed(() => {
     if (isTanpaKasir.value) return ['Dashboard'];
     if (isTanpaTransaksi.value) return ['Dashboard', 'Produk', 'Riwayat', 'Pembelian'];
     return isKasir.value
-        ? ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Pelanggan']
+        ? ['Dashboard', 'Kasir / Transaksi', 'Pelanggan']
         : ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Riwayat'];
 });
 

@@ -2,6 +2,7 @@
 import { usePage } from '@inertiajs/vue3';
 import {
     BarChart3,
+    Boxes,
     History,
     LayoutDashboard,
     ReceiptText,
@@ -52,6 +53,7 @@ const navGroups = computed<NavGroup[]>(() => {
     ];
     const persediaan: NavItem[] = [
         { title: 'Produk', href: '/produk', icon: ShoppingBag },
+        { title: 'Stok', href: '/stok', icon: Boxes },
         { title: 'Pembelian', href: '/pembelian', icon: ShoppingCart },
         { title: 'Supplier', href: '/supplier', icon: Truck },
     ];
@@ -62,7 +64,7 @@ const navGroups = computed<NavGroup[]>(() => {
         { title: 'Pengaturan', href: '/pengaturan', icon: Settings },
     ];
 
-    const izinKasir = new Set(['Dashboard', 'Kasir / Transaksi', 'Produk', 'Pelanggan']);
+    const izinKasir = new Set(['Dashboard', 'Kasir / Transaksi', 'Pelanggan']);
     const menuTanpaKasir = new Set(['Dashboard', 'User', 'Pengaturan']);
     // Semua role kecuali kasir tampil semua menu (termasuk User & Pengaturan untuk admin).
     // Pembatasan aksi dilakukan di backend + tombol frontend:
