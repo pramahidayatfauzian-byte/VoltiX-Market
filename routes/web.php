@@ -72,6 +72,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Manajemen User
     Route::get('user', [UserController::class, 'index'])->name('user.index');
+    Route::get('user/sekolah', [UserController::class, 'sekolah'])->name('user.sekolah');
+    Route::patch('user/sekolah/{id}/toggle', [UserController::class, 'toggleSekolah'])->name('user.sekolah.toggle');
     Route::get('user/data', [UserController::class, 'data'])->name('user.data');
     Route::post('user', [UserController::class, 'store'])->name('user.store');
     Route::put('user/{id}', [UserController::class, 'update'])->name('user.update');

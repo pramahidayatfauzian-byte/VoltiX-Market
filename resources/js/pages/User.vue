@@ -146,6 +146,92 @@ function toggle(id: number) {
     router.patch(`/user/${id}/toggle`, {}, { preserveScroll: true, onSuccess: () => muat() });
 }
 
+// ---------- Mode developer: tabel sekolah (profil saja, tanpa username/password) ----------
+type SekolahRow = {
+    id_sekolah: number;
+    kode_sekolah: string | null;
+    nama_sekolah: string | null;
+    alamat_sekolah: string | null;
+    website: string | null;
+    logo?: string | null;
+    is_active: boolean;
+    users_count: number;
+};
+
+const sekList = ref<Paginate<SekolahRow>>({ data: [], current_page: 1, last_page: 1, total: 0 });
+const sekPage = ref(1);
+const sekLoading = ref(false);
+
+async function muatSekolah() {
+    sekLoading.value = true;
+    try {
+        const q = new URLSearchParams({ search: search.value, page: String(sekPage.value) });
+        const r = await fetch(`/user/sekolah?${q}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        sekList.value = await r.json();
+    } catch { /* abaikan */ } finally { sekLoading.value = false; }
+}
+
+function terapkanSekolah() {
+    sekPage.value = 1;
+    muatSekolah();
+}
+
+const showSekolahForm = ref(false);
+const sekEdit = ref<SekolahRow | null>(null);
+const sekForm = reactive({ nama_sekolah: '', alamat_sekolah: '', website: '' });
+const sekLogoFile = ref<File | null>(null);
+const sekLogoPreview = ref<string | null>(null);
+
+function bukaEditSekolah(r: SekolahRow) {
+    sekEdit.value = r;
+    sekForm.nama_sekolah = r.nama_sekolah ?? '';
+    sekForm.alamat_sekolah = r.alamat_sekolah ?? '';
+    sekForm.website = r.website ?? '';
+    sekLogoFile.value = null;
+    sekLogoPreview.value = null;
+    showSekolahForm.value = true;
+}
+
+function pilihLogoSekolah(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (!file) {
+        sekLogoFile.value = null;
+        sekLogoPreview.value = null;
+        return;
+    }
+    sekLogoFile.value = file;
+    sekLogoPreview.value = URL.createObjectURL(file);
+}
+
+function simpanSekolah() {
+    if (!sekEdit.value) return;
+    const fd = new FormData();
+    fd.append('nama_sekolah', sekForm.nama_sekolah);
+    fd.append('alamat_sekolah', sekForm.alamat_sekolah ?? '');
+    fd.append('website', sekForm.website ?? '');
+    if (sekLogoFile.value) fd.append('logo', sekLogoFile.value);
+    router.post(`/pengaturan/sekolah/${sekEdit.value.id_sekolah}`, fd, {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => {
+            showSekolahForm.value = false;
+            sekLogoFile.value = null;
+            sekLogoPreview.value = null;
+            muatSekolah();
+        },
+    });
+}
+
+async function hapusSekolah(s: SekolahRow) {
+    const aksi = s.is_active ? 'menonaktifkan' : 'mengaktifkan kembali';
+    if (!(await konfirmasi({ pesan: `Yakin ${aksi} ${s.nama_sekolah ?? ''}? Data transaksi & akun tetap tersimpan.`, varian: s.is_active ? 'danger' : 'utama', teksYa: s.is_active ? 'Ya, nonaktifkan' : 'Ya, aktifkan' }))) return;
+    router.patch(`/user/sekolah/${s.id_sekolah}/toggle`, {}, {
+        preserveScroll: true,
+        onSuccess: () => muatSekolah(),
+    });
+}
+
 // ---------- Reset password ----------
 const showReset = ref(false);
 const resetRow = ref<UserRow | null>(null);
@@ -164,7 +250,10 @@ function prosesReset() {
     });
 }
 
-onMounted(() => muat());
+onMounted(() => {
+    if (props.is_super_admin) muatSekolah();
+    else muat();
+});
 </script>
 
 <template>
@@ -172,9 +261,9 @@ onMounted(() => muat());
 
     <div class="flex h-full flex-1 flex-col gap-4 p-4 md:p-6">
         <div>
-            <h1 class="text-xl font-bold tracking-tight text-emerald-800">Data User</h1>
+            <h1 class="text-xl font-bold tracking-tight text-emerald-800">{{ is_super_admin ? 'Manajemen Sekolah' : role_saya === 'super admin' ? 'Manajemen Pengguna' : 'Data User' }}</h1>
             <p class="mt-0.5 text-sm text-neutral-500">
-                {{ bisaKelola ? 'Kelola akun pengguna per tenant' : bisaReset ? 'Reset password pengguna sekolah Anda' : 'Lihat data pengguna sekolah Anda (read-only)' }}
+                {{ is_super_admin ? 'Kelola profil sekolah-sekolah' : bisaKelola ? 'Kelola akun pengguna per tenant' : bisaReset ? 'Reset password pengguna sekolah Anda' : 'Lihat data pengguna sekolah Anda (read-only)' }}
                 <span v-if="sekolah?.nama_sekolah" class="font-medium text-neutral-700"> — {{ sekolah.nama_sekolah }}</span>
             </p>
         </div>
@@ -183,7 +272,16 @@ onMounted(() => muat());
         <div v-if="formErrors.user" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{{ formErrors.user }}</div>
 
         <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div v-if="is_super_admin" class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div class="flex w-full gap-2 sm:max-w-md">
+                    <div class="relative flex-1">
+                        <Search class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+                        <Input v-model="search" placeholder="Cari kode / nama sekolah... (Enter)" class="pl-9" @keydown.enter="terapkanSekolah()" />
+                    </div>
+                    <Button type="button" class="h-9 shrink-0 bg-emerald-600 px-4 hover:bg-emerald-700" @click="terapkanSekolah()">Cari</Button>
+                </div>
+            </div>
+            <div v-else class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex flex-1 flex-col gap-2 sm:flex-row">
                     <div class="flex w-full gap-2 sm:max-w-md">
                         <div class="relative flex-1">
@@ -205,6 +303,76 @@ onMounted(() => muat());
                 <Button v-if="bisaKelola" type="button" class="h-11 w-full bg-emerald-600 hover:bg-emerald-700 lg:w-auto" @click="bukaTambah">+ Tambah User</Button>
             </div>
 
+            <template v-if="is_super_admin">
+                <div v-if="sekLoading" class="py-8 text-center text-sm text-neutral-400">Memuat...</div>
+                <div v-else-if="sekList.data.length === 0" class="mt-3 rounded-lg bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-400">Belum ada sekolah.</div>
+                <div v-else class="mt-3">
+                    <div class="space-y-2 sm:hidden">
+                        <div v-for="s in sekList.data" :key="s.id_sekolah" class="rounded-lg border border-neutral-100 border-l-4 px-3 py-2.5 text-sm" :class="s.is_active ? 'border-l-green-500' : 'border-l-neutral-300'">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="truncate font-semibold text-neutral-900">{{ s.nama_sekolah }}</p>
+                                <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" :class="s.is_active ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'">{{ s.is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                            </div>
+                            <p class="mt-0.5 truncate font-mono text-xs text-neutral-400">{{ s.kode_sekolah ?? '-' }} · {{ s.users_count }} akun</p>
+                            <p class="mt-0.5 truncate text-xs text-neutral-400">{{ s.alamat_sekolah ?? '-' }}</p>
+                            <div class="mt-2 grid grid-cols-2 gap-2 border-t border-neutral-50 pt-2">
+                                <button type="button" class="flex h-9 items-center justify-center rounded-md bg-emerald-600 text-xs font-medium text-white hover:bg-emerald-700" @click="bukaEditSekolah(s)">Edit Profil</button>
+                                <button type="button" class="flex h-9 items-center justify-center rounded-md text-xs font-medium transition" :class="s.is_active ? 'text-red-600 hover:bg-red-50' : 'text-emerald-700 hover:bg-emerald-50'" @click="hapusSekolah(s)">{{ s.is_active ? 'Hapus' : 'Aktifkan' }}</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hidden overflow-x-auto sm:block">
+                    <table class="w-full min-w-180 text-left text-sm">
+                        <thead>
+                            <tr class="border-b border-neutral-100 text-xs text-neutral-400">
+                                <th class="py-2 pr-2 font-medium">Kode</th>
+                                <th class="py-2 pr-2 font-medium">Nama Sekolah</th>
+                                <th class="py-2 pr-2 text-center font-medium">Akun Terdaftar</th>
+                                <th class="py-2 pr-2 font-medium">Alamat & Website</th>
+                                <th class="py-2 pr-2 text-center font-medium">Status</th>
+                                <th class="py-2 text-center font-medium">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="s in sekList.data" :key="s.id_sekolah" class="border-b border-neutral-50 last:border-0 hover:bg-neutral-50">
+                                <td class="py-2 pr-2 font-mono font-semibold whitespace-nowrap text-neutral-800">{{ s.kode_sekolah ?? '-' }}</td>
+                                <td class="py-2 pr-2 font-medium text-neutral-900">{{ s.nama_sekolah }}</td>
+                                <td class="py-2 pr-2 text-center font-bold text-emerald-700">{{ s.users_count }}</td>
+                                <td class="max-w-64 py-2 pr-2 text-neutral-600">
+                                    <p class="truncate">{{ s.alamat_sekolah ?? '-' }}</p>
+                                    <p class="truncate text-xs text-neutral-400">{{ s.website ?? '-' }}</p>
+                                </td>
+                                <td class="py-2 pr-2 text-center">
+                                    <span class="rounded-full px-2 py-0.5 text-xs font-semibold" :class="s.is_active ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'">{{ s.is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                                </td>
+                                <td class="py-2 text-center">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <button type="button" aria-label="Aksi" title="Aksi" class="inline-flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 transition hover:bg-neutral-100 hover:text-emerald-700">
+                                                <EllipsisVertical class="h-5 w-5" />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" class="w-44">
+                                            <DropdownMenuItem @click="bukaEditSekolah(s)">Edit Profil</DropdownMenuItem>
+                                            <DropdownMenuItem class="text-red-600 focus:text-red-600" @click="hapusSekolah(s)">{{ s.is_active ? 'Nonaktifkan' : 'Aktifkan' }}</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    </div>
+                    <div class="mt-3 flex items-center justify-between text-sm text-neutral-500">
+                        <span>Total {{ sekList.total }} sekolah</span>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="flex h-10 min-w-10 items-center justify-center rounded-md border border-neutral-200 px-3 disabled:opacity-40" :disabled="sekPage <= 1" @click="sekPage--; muatSekolah()">‹</button>
+                            <span>{{ sekPage }} / {{ sekList.last_page }}</span>
+                            <button type="button" class="flex h-10 min-w-10 items-center justify-center rounded-md border border-neutral-200 px-3 disabled:opacity-40" :disabled="sekPage >= sekList.last_page" @click="sekPage++; muatSekolah()">›</button>
+                        </div>
+                    </div>
+                </div>
+            </template>
+            <template v-else>
             <div v-if="loading" class="py-8 text-center text-sm text-neutral-400">Memuat...</div>
             <div v-else-if="list.data.length === 0" class="mt-3 rounded-lg bg-neutral-50 px-4 py-8 text-center text-sm text-neutral-400">Belum ada user.</div>
             <div v-else class="mt-3">
@@ -280,6 +448,7 @@ onMounted(() => muat());
                     </div>
                 </div>
             </div>
+            </template>
         </div>
     </div>
 
@@ -337,6 +506,43 @@ onMounted(() => muat());
                 <div><Label>Konfirmasi Password</Label><Input v-model="resetForm.password_confirmation" type="password" class="mt-1.5" autocomplete="new-password" /></div>
             </div>
             <Button type="button" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700" @click="prosesReset">Reset Password</Button>
+        </div>
+    </div>
+
+    <!-- Modal edit profil sekolah (developer): tanpa username & password -->
+    <div v-if="showSekolahForm && sekEdit" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4" @click.self="showSekolahForm = false">
+        <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-emerald-800">Edit Profil Sekolah</h3>
+                <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 hover:text-emerald-700" aria-label="Tutup" @click="showSekolahForm = false"><X class="h-5 w-5" /></button>
+            </div>
+            <p class="mt-1 font-mono text-xs text-neutral-400">{{ sekEdit.kode_sekolah ?? '-' }} · {{ sekEdit.users_count }} akun terdaftar</p>
+            <div class="mt-4 space-y-3">
+                <div>
+                    <Label>Nama Sekolah</Label>
+                    <Input v-model="sekForm.nama_sekolah" class="mt-1.5" />
+                    <InputError :message="formErrors.nama_sekolah" />
+                </div>
+                <div>
+                    <Label>Alamat</Label>
+                    <Input v-model="sekForm.alamat_sekolah" class="mt-1.5" />
+                    <InputError :message="formErrors.alamat_sekolah" />
+                </div>
+                <div>
+                    <Label>Website</Label>
+                    <Input v-model="sekForm.website" class="mt-1.5" placeholder="https://..." />
+                    <InputError :message="formErrors.website" />
+                </div>
+                <div>
+                    <Label>Logo (jpg/png/webp, maks 2MB)</Label>
+                    <div class="mt-1.5 flex items-center gap-3">
+                        <img v-if="sekLogoPreview" :src="sekLogoPreview" alt="Logo" class="h-16 w-16 shrink-0 rounded-lg border border-neutral-200 object-cover" />
+                        <input type="file" accept="image/jpeg,image/png,image/webp" class="w-full min-w-0 text-sm text-neutral-500 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-emerald-700" @change="pilihLogoSekolah" />
+                    </div>
+                    <InputError :message="formErrors.logo" />
+                </div>
+            </div>
+            <Button type="button" class="mt-4 h-11 w-full bg-emerald-600 hover:bg-emerald-700" @click="simpanSekolah">Simpan Profil</Button>
         </div>
     </div>
 </template>

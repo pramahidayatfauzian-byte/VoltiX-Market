@@ -142,6 +142,9 @@ class DashboardController extends Controller
                 'id_sekolah' => $user->sekolah->id_sekolah,
                 'nama_sekolah' => $user->sekolah->nama_sekolah,
             ] : null,
+            'is_developer' => $isDeveloper,
+            'sekolah_aktif_id' => $semua ? 'semua' : $sekolahId,
+            'sistem' => $isDeveloper ? $this->ringkasanSistem() : null,
             'stats' => [
                 'penjualan_hari_ini' => $penjualanHariIni,
                 'transaksi_hari_ini' => $transaksiHariIni,
@@ -156,5 +159,78 @@ class DashboardController extends Controller
             'stok_menipis' => $stokMenipis,
             'batas_menipis' => \App\Models\Barang::BATAS_MENIPIS,
         ]);
+    }
+
+    /** Ringkasan sistem untuk developer: sekolah, pengguna, server & database. */
+    private function ringkasanSistem(): array
+    {
+        $sekolah = \App\Models\Sekolah::orderBy('nama_sekolah')
+            ->get(['id_sekolah', 'kode_sekolah', 'nama_sekolah', 'logo', 'is_active'])
+            ->map(function ($s) {
+                return [
+                    'id_sekolah' => $s->id_sekolah,
+                    'kode_sekolah' => $s->kode_sekolah,
+                    'nama_sekolah' => $s->nama_sekolah,
+                    'logo_url' => $s->logo ? asset('storage/'.$s->logo) : null,
+                    'is_active' => (bool) $s->is_active,
+                    'total_pengguna' => \App\Models\TbUser::where('id_sekolah', $s->id_sekolah)->whereNull('deleted_at')->count(),
+                    'total_produk' => \App\Models\Barang::valid()->where('id_sekolah', $s->id_sekolah)->count(),
+                ];
+            });
+
+        $peran = \App\Models\TbUser::whereNull('deleted_at')
+            ->join('roles', 'roles.id_role', '=', 'tb_user.id_role')
+            ->groupBy('roles.nama_role')
+            ->pluck(DB::raw('COUNT(*)'), 'roles.nama_role');
+
+        $peranAktif = \App\Models\TbUser::whereNull('deleted_at')
+            ->where('is_active', true)
+            ->join('roles', 'roles.id_role', '=', 'tb_user.id_role')
+            ->groupBy('roles.nama_role')
+            ->pluck(DB::raw('COUNT(*)'), 'roles.nama_role');
+
+        $totalAktif = (int) array_sum($peranAktif->all());
+
+        $dbMb = 0;
+        $dbOk = true;
+        $dbVersi = '-';
+        try {
+            $info = DB::connection('mysql')->selectOne(
+                'SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS mb
+                 FROM information_schema.tables WHERE table_schema = ?',
+                [config('database.connections.mysql.database')]
+            );
+            $dbMb = (float) ($info->mb ?? 0);
+            $ver = DB::connection('mysql')->selectOne('SELECT VERSION() AS v');
+            $dbVersi = explode('-', (string) ($ver->v ?? ''))[0] ?: '-';
+        } catch (\Throwable) {
+            $dbOk = false;
+        }
+
+        return [
+            'sekolah_list' => $sekolah,
+            'total_sekolah' => $sekolah->count(),
+            'total_pengguna' => (int) array_sum($peran->all()),
+            'pengguna_peran' => $peran,
+            'pengguna_aktif' => $totalAktif,
+            'pengguna_nonaktif' => max(0, (int) array_sum($peran->all()) - $totalAktif),
+            'pengguna_peran_aktif' => $peranAktif,
+            'platform' => [
+                'aplikasi' => config('app.name', 'VOLTIX'),
+                'laravel' => app()->version(),
+                'php' => PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.'.'.PHP_RELEASE_VERSION,
+                'os' => PHP_OS_FAMILY.' ('.php_uname('s').' '.php_uname('r').')',
+                'server' => (string) (request()->server('SERVER_SOFTWARE') ?? '-'),
+                'database' => 'MySQL '.$dbVersi,
+                'zona_waktu' => config('app.timezone').' ('.now()->format('P').')',
+            ],
+            'server' => [
+                'operasional' => $dbOk,
+                'php' => PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.'.'.PHP_RELEASE_VERSION,
+                'database' => config('database.connections.mysql.database'),
+                'ukuran_db' => $dbMb.' MB',
+                'waktu' => now()->locale('id')->isoFormat('dddd, D MMMM YYYY HH:mm'),
+            ],
+        ];
     }
 }

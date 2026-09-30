@@ -330,10 +330,13 @@ class PengaturanController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    /** GET /pengaturan/password — halaman ganti password tersendiri */
+    /** GET /pengaturan/password — halaman ganti password tersendiri (super admin saja) */
     public function editPassword(Request $request)
     {
         $this->authorizeView($request);
+        if ($this->isDeveloper($request)) {
+            abort(403, 'Developer hanya boleh mengatur profil sekolah.');
+        }
         $user = $request->user();
 
         return Inertia::render('PengaturanPassword', [
@@ -344,10 +347,13 @@ class PengaturanController extends Controller
         ]);
     }
 
-    /** POST /pengaturan/password — ubah password sendiri (developer & super admin saja) */
+    /** POST /pengaturan/password — ubah password sendiri (super admin saja) */
     public function updatePassword(Request $request)
     {
         $this->authorizeView($request);
+        if ($this->isDeveloper($request)) {
+            abort(403, 'Developer hanya boleh mengatur profil sekolah.');
+        }
         $user = $request->user();
 
         $v = $request->validate([

@@ -62,6 +62,42 @@ class UserController extends Controller
         ]);
     }
 
+    /** GET /user/sekolah — daftar sekolah + jumlah akun (developer saja). */
+    public function sekolah(Request $request)
+    {
+        if (! $this->isDeveloper($request)) {
+            abort(403, 'Hanya developer yang bisa melihat daftar sekolah.');
+        }
+
+        $query = \App\Models\Sekolah::withCount(['users' => fn ($q) => $q->whereNull('deleted_at')])
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $s = trim((string) $request->query('search'));
+                $q->where(function ($w) use ($s) {
+                    $w->where('nama_sekolah', 'like', "%{$s}%")
+                        ->orWhere('kode_sekolah', 'like', "%{$s}%");
+                });
+            })
+            ->orderBy('nama_sekolah');
+
+        return response()->json($query->paginate(10)->withQueryString());
+    }
+
+    /** PATCH /user/sekolah/{id}/toggle — nonaktifkan/aktifkan sekolah (developer saja).
+     * Hapus lembut: data transaksi & akun tetap tersimpan. */
+    public function toggleSekolah(Request $request, int $id)
+    {
+        if (! $this->isDeveloper($request)) {
+            abort(403, 'Hanya developer yang bisa menonaktifkan sekolah.');
+        }
+
+        $sekolah = \App\Models\Sekolah::findOrFail($id);
+        $sekolah->update(['is_active' => ! (bool) $sekolah->is_active]);
+
+        return back()->with('success', $sekolah->is_active
+            ? "Sekolah {$sekolah->nama_sekolah} diaktifkan kembali."
+            : "Sekolah {$sekolah->nama_sekolah} dinonaktifkan. Data tetap tersimpan.");
+    }
+
     /** GET /user/data — JSON paginated + search + filter role/status */
     public function data(Request $request)
     {

@@ -35,6 +35,8 @@ const isKasir = computed(() => role.value === 'kasir');
 const isTanpaKasir = computed(() => role.value === 'developer');
 // Admin & super admin: menu lengkap kecuali Kasir / Transaksi.
 const isTanpaTransaksi = computed(() => ['admin', 'super admin'].includes(role.value));
+// Super admin: "User" tampil sebagai "Manajemen Pengguna".
+const isSuperAdmin = computed(() => role.value === 'super admin');
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -61,10 +63,20 @@ const navGroups = computed<NavGroup[]>(() => {
     const menuTanpaKasir = new Set(['Dashboard', 'User', 'Pengaturan']);
 
     const saring = (items: NavItem[]) => {
-        if (isTanpaKasir.value) return items.filter((m) => menuTanpaKasir.has(m.title));
-        if (isTanpaTransaksi.value) return items.filter((m) => m.title !== 'Kasir / Transaksi');
-        if (isKasir.value) return items.filter((m) => izinKasir.has(m.title));
-        return items;
+        let hasil = items;
+        if (isTanpaKasir.value) {
+            // Developer: tanpa penjualan; "User" tampil sebagai "Manajemen Sekolah".
+            hasil = hasil.filter((m) => menuTanpaKasir.has(m.title));
+            return hasil.map((m) => (m.title === 'User' ? { ...m, title: 'Manajemen Sekolah' } : m));
+        }
+        // Admin & super admin: tanpa menu Kasir / Transaksi.
+        if (isTanpaTransaksi.value) hasil = hasil.filter((m) => m.title !== 'Kasir / Transaksi');
+        if (isKasir.value) hasil = hasil.filter((m) => izinKasir.has(m.title));
+        // Super admin: "User" tampil sebagai "Manajemen Pengguna".
+        if (isSuperAdmin.value) {
+            return hasil.map((m) => (m.title === 'User' ? { ...m, title: 'Manajemen Pengguna' } : m));
+        }
+        return hasil;
     };
 
     return [

@@ -3,7 +3,6 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import {
     Bell,
     CheckCircle,
-    ChevronDown,
     HandCoins,
     LogOut,
     Moon,
@@ -40,13 +39,9 @@ withDefaults(
 
 const page = usePage();
 const user = computed(() => page.props.auth.user);
-const bisaPindah = computed(() => (page.props.bisa_pindah_sekolah as boolean) ?? false);
 const { qty: keranjangQty } = useKeranjang();
 const sekolahAktif = computed(
     () => page.props.sekolah_aktif as { id_sekolah: number | null; nama_sekolah: string } | null,
-);
-const daftarSekolah = computed(
-    () => (page.props.daftar_sekolah as Array<{ id_sekolah: number; nama_sekolah: string }>) ?? [],
 );
 const sekolahNama = computed(
     () => sekolahAktif.value?.nama_sekolah ?? user.value?.sekolah?.nama_sekolah ?? 'VOLTIX',
@@ -77,19 +72,6 @@ const bintangHeader = [
     { l: '95%', t: '65%', s: 2, d: '1.8s', dur: '3.4s' },
 ];
 
-function gantiSekolah(id: number | 'semua') {
-    router.post('/sekolah-aktif', { id_sekolah: id }, {
-        preserveScroll: true,
-        onSuccess: () => {
-            sekolahTerbuka.value = false;
-            // Muat ulang halaman agar seluruh data ikut ganti sekolah
-            // tanpa perlu refresh manual. State lokal halaman dimuat fresh;
-            // keranjang kasir pulih otomatis dari penyimpanan lokal.
-            router.visit(page.url, { preserveScroll: true, preserveState: false });
-        },
-    });
-}
-
 type NotifItem = {
     judul: string;
     teks: string;
@@ -98,7 +80,6 @@ type NotifItem = {
     warna: string;
 };
 const notifTerbuka = ref(false);
-const sekolahTerbuka = ref(false);
 const notifItems = ref<NotifItem[]>([]);
 const notifTotal = ref(0);
 const ikonMap: Record<string, unknown> = {
@@ -136,39 +117,7 @@ watch(notifTerbuka, (buka) => {
         </div>
         <div class="relative flex min-w-0 items-center gap-2">
             <SidebarTrigger class="-ml-1 shrink-0 rounded-full text-white/80 transition hover:bg-white/10 hover:text-white" />
-            <DropdownMenu v-if="bisaPindah" v-model:open="sekolahTerbuka">
-                <DropdownMenuTrigger as-child>
-                    <button
-                        type="button"
-                        class="hidden max-w-56 shrink-0 items-center gap-2 truncate rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/25 sm:inline-flex"
-                    >
-                        <img v-if="sekolahLogo" :src="sekolahLogo" alt="Logo" class="h-5 w-5 shrink-0 rounded-full object-cover" />
-                        <School v-else class="h-3.5 w-3.5 shrink-0" />
-                        <span class="truncate">{{ sekolahNama }}</span>
-                        <ChevronDown class="h-3.5 w-3.5 shrink-0 opacity-60" />
-                    </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" class="w-64">
-                    <DropdownMenuLabel>Pindah Sekolah</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                        :class="sekolahAktif?.id_sekolah === null ? 'bg-teal-50 font-semibold text-teal-700' : ''"
-                        @click="gantiSekolah('semua')"
-                    >
-                        Semua Sekolah
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        v-for="s in daftarSekolah"
-                        :key="s.id_sekolah"
-                        :class="sekolahAktif?.id_sekolah === s.id_sekolah ? 'bg-teal-50 font-semibold text-teal-700' : ''"
-                        @click="gantiSekolah(s.id_sekolah)"
-                    >
-                        {{ s.nama_sekolah }}
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
             <span
-                v-else
                 class="hidden max-w-56 shrink-0 items-center gap-2 truncate rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white sm:inline-flex"
             >
                 <img v-if="sekolahLogo" :src="sekolahLogo" alt="Logo" class="h-5 w-5 shrink-0 rounded-full object-cover" />

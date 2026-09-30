@@ -323,8 +323,8 @@ function simpanSekolahBaru() {
                     </dl>
                 </div>
 
-                <!-- Keamanan akun → kartu menu ke halaman baru -->
-                <Link href="/pengaturan/password" class="group flex h-fit items-center gap-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
+                <!-- Keamanan akun → kartu menu ke halaman baru (developer tidak boleh ganti password) -->
+                <Link v-if="!is_super_admin" href="/pengaturan/password" class="group flex h-fit items-center gap-4 rounded-xl border border-neutral-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md">
                     <span class="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-600 text-white shadow-sm">
                         <KeyRound class="h-6 w-6" />
                     </span>
