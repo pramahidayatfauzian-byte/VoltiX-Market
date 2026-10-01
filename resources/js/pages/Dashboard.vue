@@ -104,6 +104,8 @@ const props = defineProps<{
 }>();
 
 const page = usePage();
+const role = computed(() => (page.props.auth?.user?.role as string | undefined) ?? '');
+const canViewProduk = computed(() => !['kasir', 'super admin'].includes(role.value));
 const pindahLoading = ref<number | string | null>(null);
 
 const WARNA_PERAN = ['bg-emerald-500', 'bg-sky-500', 'bg-amber-500', 'bg-violet-500', 'bg-blue-500', 'bg-rose-500'];
@@ -493,7 +495,11 @@ const labelSumbuY = computed(() =>
                     <TriangleAlert class="h-4 w-4" />
                     Stok Menipis (≤ {{ batas_menipis }})
                 </h2>
-                <a href="/produk" class="text-xs font-medium text-amber-700 hover:underline">
+                <a
+                    v-if="canViewProduk"
+                    href="/produk"
+                    class="text-xs font-medium text-amber-700 hover:underline"
+                >
                     Lihat produk →
                 </a>
             </div>

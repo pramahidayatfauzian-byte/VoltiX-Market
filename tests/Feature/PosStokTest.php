@@ -115,3 +115,8 @@ test('riwayat respects tenant isolation', function () {
     $this->actingAs($admin)->getJson(route('produk.riwayat', $barang->id_barang))
         ->assertNotFound();
 });
+
+test('super admin cannot access stok page', function () {
+    $superadmin = TbUser::where('username', 'superadmin1')->first();
+    $this->actingAs($superadmin)->get(route('stok.index'))->assertForbidden();
+});

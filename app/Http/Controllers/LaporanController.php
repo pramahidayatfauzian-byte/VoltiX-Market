@@ -16,11 +16,11 @@ class LaporanController extends Controller
         return ($request->user()->role?->nama_role === 'developer');
     }
 
-    /** Kasir tidak boleh membuka laporan. */
+    /** Kasir & admin tidak boleh membuka laporan (hanya developer & super admin). */
     private function authorizeView(Request $request): void
     {
         $role = $request->user()->role?->nama_role;
-        if (! in_array($role, ['developer', 'super admin', 'admin'], true)) {
+        if (! in_array($role, ['developer', 'super admin'], true)) {
             abort(403, 'Anda tidak memiliki akses ke laporan.');
         }
     }

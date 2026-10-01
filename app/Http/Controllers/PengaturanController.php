@@ -80,6 +80,7 @@ class PengaturanController extends Controller
 
         return Inertia::render('Pengaturan', [
             'backup' => $backup,
+            'konteks' => \App\Support\Tenant::aktif($request),
             'sekolah' => $user->sekolah ? [
                 'id_sekolah' => $user->sekolah->id_sekolah,
                 'nama_sekolah' => $user->sekolah->nama_sekolah,

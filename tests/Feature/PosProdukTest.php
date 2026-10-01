@@ -99,3 +99,8 @@ test('kelompok crud works', function () {
     $this->actingAs($admin)->delete(route('kelompok.destroy', $k->id))
         ->assertSessionHas('success');
 });
+
+test('super admin cannot access produk page', function () {
+    $superadmin = TbUser::where('username', 'superadmin1')->first();
+    $this->actingAs($superadmin)->get(route('produk.index'))->assertForbidden();
+});

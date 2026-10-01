@@ -17,6 +17,7 @@ type SekolahOpt = { id_sekolah: number; nama_sekolah: string | null };
 
 const props = defineProps<{
     backup?: { database: string; tabel: number; ukuran: string } | null;
+    konteks?: { id_sekolah: number | null; nama_sekolah: string } | null;
     sekolah?: { id_sekolah: number; nama_sekolah: string | null } | null;
     sekolah_list: SekolahOpt[];
     is_super_admin: boolean;
@@ -237,9 +238,9 @@ function simpanSekolahBaru() {
         <div v-if="successMsg" class="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">{{ successMsg }}</div>
 
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <!-- Kiri: Profil sekolah (developer, super admin, & admin) -->
-            <div v-if="props.bisa_kelola_sekolah ?? props.is_super_admin" class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm xl:col-span-2">
-                <h2 class="flex items-center gap-2 text-sm font-bold text-emerald-800">
+            <!-- Kiri: Profil sekolah (super admin saja; developer tidak pakai) -->
+            <div v-if="!props.is_super_admin && (props.bisa_kelola_sekolah ?? props.is_super_admin)" class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm xl:col-span-2">
+                    <h2 class="flex items-center gap-2 text-sm font-bold text-emerald-800">
                     <School class="h-4 w-4" /> Profil Sekolah
                 </h2>
                 <div v-if="is_super_admin" class="mt-3">
@@ -292,7 +293,18 @@ function simpanSekolahBaru() {
             </div>
 
             <!-- Kanan: tumpukan kartu akun + keamanan + tips + menu cepat -->
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-4" :class="is_super_admin ? 'xl:col-span-3 sm:grid sm:grid-cols-2 sm:items-start' : ''">
+                <!-- Konteks aktif (developer): pindah via Dashboard -->
+                <div v-if="is_super_admin" class="rounded-xl border border-teal-100 bg-teal-50 p-4 shadow-sm">
+                    <h2 class="flex items-center gap-2 text-sm font-bold text-emerald-800">
+                        <LayoutGrid class="h-4 w-4" /> Konteks Aktif
+                    </h2>
+                    <p class="mt-2 truncate text-lg font-extrabold text-neutral-900">{{ konteks?.nama_sekolah ?? 'Semua Sekolah' }}</p>
+                    <p class="mt-0.5 text-xs text-neutral-500">Ganti konteks di halaman Dashboard.</p>
+                    <Link href="/dashboard" class="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700">
+                        Buka Dashboard <ArrowRight class="h-4 w-4" />
+                    </Link>
+                </div>
                 <!-- 1. Informasi Akun -->
                 <div class="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm">
                     <h2 class="flex items-center gap-2 text-sm font-bold text-emerald-800">
@@ -312,11 +324,11 @@ function simpanSekolahBaru() {
                             <dt class="text-neutral-400">Peran</dt>
                             <dd class="font-semibold text-neutral-800 capitalize">{{ role_saya ?? '-' }}</dd>
                         </div>
-                        <div class="flex justify-between gap-2">
+                        <div v-if="!is_super_admin" class="flex justify-between gap-2">
                             <dt class="text-neutral-400">Sekolah aktif</dt>
                             <dd class="max-w-45 truncate font-semibold text-neutral-800">{{ sekolah?.nama_sekolah ?? target.nama_sekolah ?? '-' }}</dd>
                         </div>
-                        <div class="flex justify-between gap-2">
+                        <div v-if="!is_super_admin" class="flex justify-between gap-2">
                             <dt class="text-neutral-400">Kode sekolah</dt>
                             <dd class="font-semibold text-neutral-800">{{ target.kode_sekolah ?? '-' }}</dd>
                         </div>

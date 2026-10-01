@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import {
+    BarChart3,
     Boxes,
     History,
     LayoutDashboard,
@@ -37,6 +38,7 @@ const isTanpaKasir = computed(() => role.value === 'developer');
 const isTanpaTransaksi = computed(() => ['admin', 'super admin'].includes(role.value));
 // Super admin: "User" tampil sebagai "Manajemen Pengguna".
 const isSuperAdmin = computed(() => role.value === 'super admin');
+const isAdmin = computed(() => role.value === 'admin');
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -45,6 +47,7 @@ const navGroups = computed<NavGroup[]>(() => {
         { title: 'Dashboard', href: dashboard(), icon: LayoutDashboard },
         { title: 'Kasir / Transaksi', href: '/kasir', icon: ReceiptText },
         { title: 'Retur', href: '/retur', icon: RotateCcw },
+        { title: 'Laporan', href: '/laporan', icon: BarChart3 },
     ];
     const persediaan: NavItem[] = [
         { title: 'Produk', href: '/produk', icon: ShoppingBag },
@@ -69,11 +72,16 @@ const navGroups = computed<NavGroup[]>(() => {
             hasil = hasil.filter((m) => menuTanpaKasir.has(m.title));
             return hasil.map((m) => (m.title === 'User' ? { ...m, title: 'Manajemen Sekolah' } : m));
         }
-        // Admin & super admin: tanpa menu Kasir / Transaksi.
+        if (isAdmin.value) {
+            // Admin: tanpa Kasir/Transaksi, serta Laporan, Pengaturan, User hanya ada di super admin.
+            return hasil.filter((m) => !['Kasir / Transaksi', 'Laporan', 'Pengaturan', 'User'].includes(m.title));
+        }
+        // Super admin & lainnya:
         if (isTanpaTransaksi.value) hasil = hasil.filter((m) => m.title !== 'Kasir / Transaksi');
         if (isKasir.value) hasil = hasil.filter((m) => izinKasir.has(m.title));
-        // Super admin: "User" tampil sebagai "Manajemen Pengguna".
+        // Super admin: tanpa Produk & Stok, "User" tampil sebagai "Manajemen Pengguna".
         if (isSuperAdmin.value) {
+            hasil = hasil.filter((m) => !['Produk', 'Stok'].includes(m.title));
             return hasil.map((m) => (m.title === 'User' ? { ...m, title: 'Manajemen Pengguna' } : m));
         }
         return hasil;
@@ -89,17 +97,17 @@ const navGroups = computed<NavGroup[]>(() => {
 const datar = computed(() => navGroups.value.flatMap((g) => g.items));
 
 // 4 menu utama + 1 tombol "Lainnya" = 5 di bar bawah.
-// Urutan mobile: Beranda, Produk, Kasir (tengah & diperbesar), Riwayat.
-// Riwayat = /laporan (khusus kasir disembunyikan karena backend 403, fallback ke Pelanggan).
-// Developer tanpa penjualan: hanya Beranda (+ Lainnya berisi User & Pengaturan).
-// Admin & super admin tanpa Kasir: Beranda, Produk, Riwayat, Pembelian.
+// Developer tanpa penjualan: hanya Beranda (+ Lainnya berisi Manajemen Sekolah & Pengaturan).
+// Super admin tanpa Kasir: Beranda, Pembelian, Laporan, Pelanggan.
+// Admin tanpa Kasir/Laporan/User/Pengaturan: Beranda, Produk, Pembelian, Pelanggan.
 // Kasir tanpa Produk/Stok: Beranda, Kasir, Pelanggan.
 const judulUtama = computed(() => {
     if (isTanpaKasir.value) return ['Dashboard'];
-    if (isTanpaTransaksi.value) return ['Dashboard', 'Produk', 'Riwayat', 'Pembelian'];
+    if (isAdmin.value) return ['Dashboard', 'Produk', 'Pembelian', 'Pelanggan'];
+    if (isSuperAdmin.value) return ['Dashboard', 'Pembelian', 'Laporan', 'Pelanggan'];
     return isKasir.value
         ? ['Dashboard', 'Kasir / Transaksi', 'Pelanggan']
-        : ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Riwayat'];
+        : ['Dashboard', 'Produk', 'Kasir / Transaksi', 'Laporan'];
 });
 
 const utama = computed(() =>
@@ -121,6 +129,8 @@ const labelPendek: Record<string, string> = {
     'Dashboard': 'Beranda',
     'Kasir / Transaksi': 'Kasir',
     'Pembelian': 'Beli',
+    'Manajemen Pengguna': 'User',
+    'Manajemen Sekolah': 'Sekolah',
 };
 
 const pendek = (t: string) => labelPendek[t] ?? t;
@@ -194,8 +204,8 @@ watch(() => page.url, () => {
                 <SheetHeader class="text-left">
                     <SheetTitle>Semua Menu</SheetTitle>
                 </SheetHeader>
-                <div v-for="g in sisaGroups" :key="g.label" class="mt-3">
-                    <p class="pembatas px-1"><span>{{ g.label }}</span></p>
+                <div v-for="(g, i) in sisaGroups" :key="g.label || i" class="mt-3">
+                    <p v-if="g.label" class="pembatas px-1"><span>{{ g.label }}</span></p>
                     <div class="grid grid-cols-4 gap-1">
                         <Link
                             v-for="m in g.items"

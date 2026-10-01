@@ -14,6 +14,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { useAppearance } from '@/composables/useAppearance';
+import { konfirmasi } from '@/composables/useConfirm';
 import { logout } from '@/routes';
 import UserInfo from '@/components/UserInfo.vue';
 import {
@@ -58,6 +59,12 @@ const bisaPengaturan = computed(() => ['developer', 'super admin'].includes(role
 const { isDark, toggleAppearance } = useAppearance();
 function toggleTema() {
     toggleAppearance();
+}
+
+async function konfirmasiKeluar() {
+    if (!(await konfirmasi({ judul: 'Keluar dari VOLTIX', pesan: 'Sesi Anda akan diakhiri. Yakin mau keluar?', teksYa: 'Ya, keluar', teksBatal: 'Batal', varian: 'utama', ikon: 'keluar' }))) return;
+    router.flushAll();
+    router.post(logout());
 }
 
 // Taburan cahaya bintang seperti di sidebar.
@@ -234,18 +241,16 @@ watch(notifTerbuka, (buka) => {
                         <span class="block text-[11px] font-medium text-amber-200 capitalize">{{ roleUser }}</span>
                     </span>
                 </span>
-                <Link
-                    :href="logout()"
-                    method="post"
-                    as="button"
+                <button
+                    type="button"
                     class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-red-500/25 hover:text-white"
                     title="Keluar"
                     aria-label="Keluar"
                     data-test="logout-button"
-                    @click="router.flushAll()"
+                    @click="konfirmasiKeluar()"
                 >
                     <LogOut class="h-4 w-4" />
-                </Link>
+                </button>
             </div>
         </div>
     </header>

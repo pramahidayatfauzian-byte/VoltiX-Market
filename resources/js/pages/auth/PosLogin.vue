@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, router } from '@inertiajs/vue3';
 import { User as UserIcon, Lock, ArrowRight, Eye, EyeOff, ShoppingCart, BarChart3, ShieldCheck, Sun, Moon, ScanBarcode, ReceiptText } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { useAppearance } from '@/composables/useAppearance';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,34 @@ const { isDark, toggleAppearance } = useAppearance();
 function toggleTema() {
     toggleAppearance();
 }
+
+// Overlay transisi saat proses login (hilang otomatis saat pindah halaman,
+// atau saat kembali dengan error validasi).
+const masukLoading = ref(false);
+const statusMasuk = ref(0);
+const statusTeks = ['Memeriksa akun...', 'Menyiapkan dashboard...', 'Hampir selesai...'];
+let lepasStart: (() => void) | null = null;
+let lepasError: (() => void) | null = null;
+let statusTimer: ReturnType<typeof setInterval> | undefined;
+onMounted(() => {
+    lepasStart = router.on('start', () => {
+        masukLoading.value = true;
+        statusMasuk.value = 0;
+        if (statusTimer) clearInterval(statusTimer);
+        statusTimer = setInterval(() => {
+            statusMasuk.value = (statusMasuk.value + 1) % statusTeks.length;
+        }, 1100);
+    });
+    lepasError = router.on('error', () => {
+        masukLoading.value = false;
+        if (statusTimer) clearInterval(statusTimer);
+    });
+});
+onUnmounted(() => {
+    lepasStart?.();
+    lepasError?.();
+    if (statusTimer) clearInterval(statusTimer);
+});
 </script>
 
 <template>
@@ -253,6 +281,33 @@ function toggleTema() {
                     </span>
                 </div>
             </div>
+
+            <!-- Overlay transisi masuk -->
+            <div v-if="masukLoading" class="absolute inset-0 z-50 flex flex-col items-center justify-center gap-5 overflow-hidden bg-white/85 backdrop-blur-sm dark:bg-neutral-950/85">
+                <div aria-hidden="true" class="anim-hanyut pointer-events-none absolute -top-16 -left-16 size-64 rounded-full bg-emerald-300/40 blur-3xl" />
+                <div aria-hidden="true" class="anim-hanyut-lambat pointer-events-none absolute -right-20 -bottom-20 size-72 rounded-full bg-teal-300/40 blur-3xl" />
+                <span aria-hidden="true" class="anim-apung absolute top-[18%] left-[16%] text-xl font-bold text-emerald-300 select-none dark:text-emerald-800">+</span>
+                <span aria-hidden="true" class="anim-apung-lambat absolute right-[18%] bottom-[22%] text-lg font-bold text-teal-300 select-none dark:text-teal-800">+</span>
+                <div class="anim-masuk relative">
+                    <div aria-hidden="true" class="absolute -inset-1.5 animate-spin rounded-[1.6rem] bg-[conic-gradient(from_0deg,#14b8a6,#5eead4,#fbbf24,#14b8a6)] blur-[3px] [animation-duration:2.5s]" />
+                    <div aria-hidden="true" class="absolute -inset-3 animate-spin [animation-duration:4s]">
+                        <span class="absolute -top-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-amber-400 shadow-[0_0_10px_#fbbf24]" />
+                        <span class="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-teal-300 shadow-[0_0_10px_#5eead4]" />
+                    </div>
+                    <div aria-hidden="true" class="absolute top-1/2 left-1/2 -z-10 h-32 w-32 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full bg-emerald-400/30 blur-2xl" />
+                    <span aria-hidden="true" class="anim-partikel absolute top-[30%] left-[12%] h-1.5 w-1.5 rounded-full bg-emerald-400" style="animation-delay: 0s" />
+                    <span aria-hidden="true" class="anim-partikel absolute top-[20%] right-[14%] h-1 w-1 rounded-full bg-teal-400" style="animation-delay: 0.7s" />
+                    <span aria-hidden="true" class="anim-partikel absolute top-[45%] left-[6%] h-2 w-2 rounded-full bg-amber-300" style="animation-delay: 1.2s" />
+                    <span aria-hidden="true" class="anim-partikel absolute top-[40%] right-[8%] h-1.5 w-1.5 rounded-full bg-emerald-300" style="animation-delay: 1.8s" />
+                    <img src="/logo-voltix-mark.png" alt="VOLTIX" class="relative h-20 w-20 rounded-2xl object-cover shadow-xl" />
+                </div>
+                <p class="anim-masuk -mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300" style="animation-delay: 0.1s">
+                    {{ statusTeks[statusMasuk] }}<span class="ml-0.5 inline-flex gap-0.5" aria-hidden="true"><i class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 not-italic" /><i class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 not-italic [animation-delay:0.15s]" /><i class="h-1 w-1 animate-bounce rounded-full bg-emerald-500 not-italic [animation-delay:0.3s]" /></span>
+                </p>
+                <div class="anim-masuk h-1 w-44 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800" style="animation-delay: 0.2s">
+                    <div class="anim-masuk-bar h-full w-1/2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-400" />
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -287,6 +342,15 @@ function toggleTema() {
     45% { left: 130%; }
     100% { left: 130%; }
 }
+@keyframes login-masuk-bar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+}
+@keyframes login-partikel {
+    0% { opacity: 0; transform: translateY(14px) scale(0.5); }
+    30% { opacity: 0.9; }
+    100% { opacity: 0; transform: translateY(-46px) scale(1); }
+}
 
 .anim-apung { animation: login-apung 4s ease-in-out infinite; }
 .anim-apung-lambat { animation: login-apung 5.5s ease-in-out 0.8s infinite; }
@@ -297,6 +361,8 @@ function toggleTema() {
 .anim-masuk-kartu { animation: login-masuk-kartu 0.55s ease-out both; }
 .anim-logo { animation: login-denyut 3s ease-in-out infinite; }
 .anim-kilat { animation: login-kilat 5.5s ease-in-out infinite; }
+.anim-masuk-bar { animation: login-masuk-bar 1.1s ease-in-out infinite; }
+.anim-partikel { animation: login-partikel 2.4s ease-out infinite; }
 .anim-jalan { animation: login-jalan 24s linear infinite; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -309,6 +375,8 @@ function toggleTema() {
     .anim-masuk-kartu,
     .anim-logo,
     .anim-kilat,
+    .anim-masuk-bar,
+    .anim-partikel,
     .anim-jalan {
         animation: none;
     }

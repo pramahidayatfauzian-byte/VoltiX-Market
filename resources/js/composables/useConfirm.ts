@@ -2,12 +2,15 @@ import { reactive } from 'vue';
 
 export type ConfirmVarian = 'danger' | 'utama';
 
+export type ConfirmIkon = 'peringatan' | 'keluar' | 'berhasil';
+
 export type ConfirmOpsi = {
     judul?: string;
     pesan: string;
     teksYa?: string;
     teksBatal?: string;
     varian?: ConfirmVarian;
+    ikon?: ConfirmIkon;
 };
 
 // State global tunggal: cukup pasang <ConfirmDialog /> sekali di layout.
@@ -18,6 +21,7 @@ const state = reactive({
     teksYa: 'Ya, lanjutkan',
     teksBatal: 'Batal',
     varian: 'danger' as ConfirmVarian,
+    ikon: 'peringatan' as ConfirmIkon,
     putuskan: null as null | ((nilai: boolean) => void),
 });
 
@@ -38,6 +42,7 @@ export function konfirmasi(pesan: string | ConfirmOpsi): Promise<boolean> {
     state.teksYa = opsi.teksYa ?? 'Ya, lanjutkan';
     state.teksBatal = opsi.teksBatal ?? 'Batal';
     state.varian = opsi.varian ?? 'danger';
+    state.ikon = opsi.ikon ?? 'peringatan';
     state.terbuka = true;
     return new Promise<boolean>((resolve) => {
         state.putuskan = resolve;

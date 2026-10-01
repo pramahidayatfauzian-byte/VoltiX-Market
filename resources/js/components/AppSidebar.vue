@@ -43,6 +43,7 @@ const isTanpaKasir = computed(() => role.value === 'developer');
 const isTanpaTransaksi = computed(() => ['admin', 'super admin'].includes(role.value));
 // Super admin: "User" tampil sebagai "Manajemen Pengguna".
 const isSuperAdmin = computed(() => role.value === 'super admin');
+const isAdmin = computed(() => role.value === 'admin');
 
 type NavGroup = { label: string; items: NavItem[] };
 
@@ -68,12 +69,6 @@ const navGroups = computed<NavGroup[]>(() => {
 
     const izinKasir = new Set(['Dashboard', 'Kasir / Transaksi', 'Pelanggan']);
     const menuTanpaKasir = new Set(['Dashboard', 'User', 'Pengaturan']);
-    // Semua role kecuali kasir tampil semua menu (termasuk User & Pengaturan untuk admin).
-    // Pembatasan aksi dilakukan di backend + tombol frontend:
-    // - Admin: User read-only (tanpa edit/reset), Pengaturan 403.
-    // - Kasir: hanya menu terbatas.
-    // - Developer: tanpa menu penjualan.
-    // - Admin & super admin: tanpa menu Kasir / Transaksi.
 
     const saring = (items: NavItem[]) => {
         let hasil = items;
@@ -82,11 +77,16 @@ const navGroups = computed<NavGroup[]>(() => {
             hasil = hasil.filter((m) => menuTanpaKasir.has(m.title));
             return hasil.map((m) => (m.title === 'User' ? { ...m, title: 'Manajemen Sekolah' } : m));
         }
-        // Admin & super admin: tanpa menu Kasir / Transaksi.
+        if (isAdmin.value) {
+            // Admin: tanpa Kasir/Transaksi, serta Laporan, Pengaturan, User hanya ada di super admin.
+            return hasil.filter((m) => !['Kasir / Transaksi', 'Laporan', 'Pengaturan', 'User'].includes(m.title));
+        }
+        // Super admin & lainnya:
         if (isTanpaTransaksi.value) hasil = hasil.filter((m) => m.title !== 'Kasir / Transaksi');
         if (isKasir.value) hasil = hasil.filter((m) => izinKasir.has(m.title));
-        // Super admin: "User" tampil sebagai "Manajemen Pengguna".
+        // Super admin: tanpa Produk & Stok, "User" tampil sebagai "Manajemen Pengguna".
         if (isSuperAdmin.value) {
+            hasil = hasil.filter((m) => !['Produk', 'Stok'].includes(m.title));
             return hasil.map((m) => (m.title === 'User' ? { ...m, title: 'Manajemen Pengguna' } : m));
         }
         return hasil;
@@ -156,7 +156,7 @@ const bintang = [
         </SidebarHeader>
 
         <SidebarContent class="px-2">
-            <template v-for="(g, i) in navGroups" :key="g.label">
+            <template v-for="(g, i) in navGroups" :key="g.label || i">
                 <div class="anim-side-masuk" :style="{ animationDelay: `${0.1 + i * 0.09}s` }">
                     <NavMain :items="g.items" :label="g.label" />
                 </div>

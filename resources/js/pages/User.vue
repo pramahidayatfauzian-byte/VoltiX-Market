@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { EllipsisVertical, KeyRound, Search, X } from '@lucide/vue';
+import { EllipsisVertical, KeyRound, Search, Users, X } from '@lucide/vue';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -232,6 +232,32 @@ async function hapusSekolah(s: SekolahRow) {
     });
 }
 
+// ---------- Daftar akun per sekolah ----------
+type AkunRow = {
+    id_user: number;
+    nama_lengkap: string | null;
+    username: string | null;
+    is_active: boolean;
+    role?: { nama_role: string | null } | null;
+};
+
+const showAkun = ref(false);
+const akunSekolahNama = ref('');
+const akunList = ref<AkunRow[]>([]);
+const akunLoading = ref(false);
+
+async function bukaAkun(s: SekolahRow) {
+    akunSekolahNama.value = s.nama_sekolah ?? '';
+    akunList.value = [];
+    akunLoading.value = true;
+    showAkun.value = true;
+    try {
+        const r = await fetch(`/user/sekolah/${s.id_sekolah}/akun`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const j = await r.json();
+        akunList.value = j.data ?? [];
+    } catch { /* abaikan */ } finally { akunLoading.value = false; }
+}
+
 // ---------- Reset password ----------
 const showReset = ref(false);
 const resetRow = ref<UserRow | null>(null);
@@ -313,7 +339,12 @@ onMounted(() => {
                                 <p class="truncate font-semibold text-neutral-900">{{ s.nama_sekolah }}</p>
                                 <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" :class="s.is_active ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'">{{ s.is_active ? 'Aktif' : 'Nonaktif' }}</span>
                             </div>
-                            <p class="mt-0.5 truncate font-mono text-xs text-neutral-400">{{ s.kode_sekolah ?? '-' }} · {{ s.users_count }} akun</p>
+                            <p class="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-neutral-400">
+                                <span class="truncate">{{ s.kode_sekolah ?? '-' }} · {{ s.users_count }} akun</span>
+                                <button type="button" aria-label="Lihat akun terdaftar" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-600 hover:text-white" @click="bukaAkun(s)">
+                                    <Users class="h-3.5 w-3.5" />
+                                </button>
+                            </p>
                             <p class="mt-0.5 truncate text-xs text-neutral-400">{{ s.alamat_sekolah ?? '-' }}</p>
                             <div class="mt-2 grid grid-cols-2 gap-2 border-t border-neutral-50 pt-2">
                                 <button type="button" class="flex h-9 items-center justify-center rounded-md bg-emerald-600 text-xs font-medium text-white hover:bg-emerald-700" @click="bukaEditSekolah(s)">Edit Profil</button>
@@ -337,7 +368,12 @@ onMounted(() => {
                             <tr v-for="s in sekList.data" :key="s.id_sekolah" class="border-b border-neutral-50 last:border-0 hover:bg-neutral-50">
                                 <td class="py-2 pr-2 font-mono font-semibold whitespace-nowrap text-neutral-800">{{ s.kode_sekolah ?? '-' }}</td>
                                 <td class="py-2 pr-2 font-medium text-neutral-900">{{ s.nama_sekolah }}</td>
-                                <td class="py-2 pr-2 text-center font-bold text-emerald-700">{{ s.users_count }}</td>
+                                <td class="py-2 pr-2 text-center">
+                                    <span class="font-bold text-emerald-700">{{ s.users_count }}</span>
+                                    <button type="button" aria-label="Lihat akun terdaftar" title="Lihat akun terdaftar" class="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 transition hover:bg-emerald-600 hover:text-white" @click="bukaAkun(s)">
+                                        <Users class="h-4 w-4" />
+                                    </button>
+                                </td>
                                 <td class="max-w-64 py-2 pr-2 text-neutral-600">
                                     <p class="truncate">{{ s.alamat_sekolah ?? '-' }}</p>
                                     <p class="truncate text-xs text-neutral-400">{{ s.website ?? '-' }}</p>
@@ -543,6 +579,31 @@ onMounted(() => {
                 </div>
             </div>
             <Button type="button" class="mt-4 h-11 w-full bg-emerald-600 hover:bg-emerald-700" @click="simpanSekolah">Simpan Profil</Button>
+        </div>
+    </div>
+
+    <!-- Modal daftar akun sekolah -->
+    <div v-if="showAkun" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/30 p-4" @click.self="showAkun = false">
+        <div class="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-emerald-800">Akun Terdaftar</h3>
+                <button type="button" class="flex h-9 w-9 items-center justify-center rounded-full text-neutral-400 hover:text-emerald-700" aria-label="Tutup" @click="showAkun = false"><X class="h-5 w-5" /></button>
+            </div>
+            <p class="mt-1 truncate text-xs text-neutral-400">{{ akunSekolahNama }}</p>
+            <div v-if="akunLoading" class="py-8 text-center text-sm text-neutral-400">Memuat...</div>
+            <div v-else-if="akunList.length === 0" class="mt-3 rounded-lg bg-neutral-50 px-4 py-6 text-center text-sm text-neutral-400">Belum ada akun.</div>
+            <div v-else class="mt-3 space-y-2">
+                <div v-for="a in akunList" :key="a.id_user" class="flex items-center gap-3 rounded-lg border border-neutral-100 px-3 py-2.5 text-sm">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-teal-600 text-xs font-bold text-white">
+                        {{ (a.nama_lengkap ?? a.username ?? '?').trim().charAt(0).toUpperCase() }}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate font-semibold text-neutral-900">{{ a.nama_lengkap }}</p>
+                        <p class="truncate text-xs text-neutral-400">@{{ a.username }} · <span class="capitalize">{{ a.role?.nama_role ?? '-' }}</span></p>
+                    </div>
+                    <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold" :class="a.is_active ? 'bg-green-100 text-green-700' : 'bg-neutral-100 text-neutral-500'">{{ a.is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                </div>
+            </div>
         </div>
     </div>
 </template>

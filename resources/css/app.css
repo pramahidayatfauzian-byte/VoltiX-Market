@@ -155,6 +155,7 @@
 .bg-\[\#f3f5f9\] {
     background-color: #f4f7f5;
     background-image:
+        linear-gradient(to bottom, rgba(13, 148, 136, 0.08), transparent 140px),
         repeating-linear-gradient(to bottom, transparent 0 31px, rgba(13, 148, 136, 0.045) 31px 32px),
         radial-gradient(640px 220px at 12% -60px, rgba(20, 184, 166, 0.09), transparent 60%),
         radial-gradient(560px 200px at 88% -50px, rgba(45, 212, 191, 0.08), transparent 60%),
@@ -262,6 +263,61 @@ div[data-sidebar='sidebar'] {
 }
 [data-sidebar='content']::-webkit-scrollbar {
     display: none;
+}
+
+/* Pemoles global semua halaman. */
+html {
+    scroll-behavior: smooth;
+}
+::selection {
+    background: #99f6e4;
+    color: #134e4a;
+}
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #c9d4d0 transparent;
+}
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+    background: #c9d4d0;
+    border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: #14b8a6;
+}
+table {
+    font-variant-numeric: tabular-nums;
+}
+.bg-white.rounded-xl {
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+    border-radius: 1.25rem;
+}
+.bg-white.rounded-xl:hover {
+    border-color: #d3e0da;
+    box-shadow:
+        0 1px 2px rgb(16 24 20 / 0.05),
+        0 10px 28px -10px rgb(13 148 136 / 0.18);
+}
+.dark .bg-white.rounded-xl:hover {
+    border-color: #333333;
+    box-shadow:
+        0 1px 2px rgb(0 0 0 / 0.4),
+        0 10px 28px -10px rgb(0 0 0 / 0.55);
+}
+
+/* Tombol & pil emerald bergradasi senada sidebar/header. */
+.bg-emerald-600 {
+    background-image: linear-gradient(to bottom, #14b8a6, #0d9488);
+}
+.hover\:bg-emerald-700:hover {
+    background-color: #0f766e;
+    background-image: linear-gradient(to bottom, #0d9488, #0f766e);
 }
 
 /* Belang tabel (zebra) di semua halaman — hover baris tetap menang. */

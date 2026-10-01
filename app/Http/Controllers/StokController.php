@@ -16,13 +16,14 @@ class StokController extends Controller
         return ($request->user()->role?->nama_role === 'developer');
     }
 
-    /** Kasir tidak punya halaman stok (stok terlihat di kasir saat jualan). */
+    /** Kasir dan Super Admin tidak punya halaman stok (stok terlihat di kasir saat jualan). */
     private function authorizeAkses(Request $request): void
     {
-        if (($request->user()->role?->nama_role ?? '') === 'kasir') {
-            abort(403, 'Kasir tidak dapat mengakses halaman stok.');
+        $role = $request->user()->role?->nama_role ?? '';
+        if (in_array($role, ['kasir', 'super admin'], true)) {
+            abort(403, 'Super admin dan kasir tidak dapat mengakses halaman stok.');
         }
-        // Developer global, super admin/admin per-sekolah — semua boleh lihat.
+        // Developer global, admin per-sekolah — semua boleh lihat.
     }
 
     /** GET /stok — halaman */

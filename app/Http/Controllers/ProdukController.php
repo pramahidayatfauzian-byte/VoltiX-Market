@@ -17,21 +17,23 @@ class ProdukController extends Controller
         return ($request->user()->role?->nama_role === 'developer');
     }
 
-    /** Kasir tidak punya halaman produk (lihat/tambah lewat kasir saja). */
+    /** Kasir dan Super Admin tidak punya halaman produk. */
     private function authorizeAkses(Request $request): void
     {
-        if (($request->user()->role?->nama_role ?? '') === 'kasir') {
-            abort(403, 'Kasir tidak dapat mengakses halaman produk.');
+        $role = $request->user()->role?->nama_role ?? '';
+        if (in_array($role, ['kasir', 'super admin'], true)) {
+            abort(403, 'Super admin dan kasir tidak dapat mengakses halaman produk.');
         }
-        // Developer global, super admin/admin per-sekolah — semua boleh lihat.
+        // Developer global, admin per-sekolah — semua boleh lihat.
     }
 
-    /** Kasir hanya boleh melihat produk. */
+    /** Kasir dan Super Admin tidak boleh mengelola produk. */
     private function authorizeManage(Request $request): void
     {
         $this->authorizeAkses($request);
-        if (($request->user()->role?->nama_role ?? '') === 'kasir') {
-            abort(403, 'Kasir hanya boleh melihat produk.');
+        $role = $request->user()->role?->nama_role ?? '';
+        if (in_array($role, ['kasir', 'super admin'], true)) {
+            abort(403, 'Super admin dan kasir hanya boleh melihat atau tidak memiliki akses.');
         }
     }
 

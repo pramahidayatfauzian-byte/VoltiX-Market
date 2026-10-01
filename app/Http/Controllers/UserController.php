@@ -13,11 +13,11 @@ use Inertia\Inertia;
 class UserController extends Controller
 {
 
-    /** Lihat user: developer, super admin, admin. Kasir dilarang. */
+    /** Lihat user: developer & super admin saja. Admin dan kasir dilarang. */
     private function authorizeLihat(Request $request): void
     {
         $role = $request->user()->role?->nama_role;
-        if (! in_array($role, ['developer', 'super admin', 'admin'], true)) {
+        if (! in_array($role, ['developer', 'super admin'], true)) {
             abort(403, 'Anda tidak memiliki akses ke manajemen user.');
         }
     }
@@ -96,6 +96,22 @@ class UserController extends Controller
         return back()->with('success', $sekolah->is_active
             ? "Sekolah {$sekolah->nama_sekolah} diaktifkan kembali."
             : "Sekolah {$sekolah->nama_sekolah} dinonaktifkan. Data tetap tersimpan.");
+    }
+
+    /** GET /user/sekolah/{id}/akun — daftar akun satu sekolah (developer saja). */
+    public function akunSekolah(Request $request, int $id)
+    {
+        if (! $this->isDeveloper($request)) {
+            abort(403, 'Hanya developer yang bisa melihat akun sekolah.');
+        }
+
+        $rows = TbUser::valid()
+            ->where('id_sekolah', $id)
+            ->with('role:id_role,nama_role')
+            ->orderBy('nama_lengkap')
+            ->get(['id_user', 'nama_lengkap', 'username', 'id_role', 'is_active']);
+
+        return response()->json(['data' => $rows->makeHidden('password')]);
     }
 
     /** GET /user/data — JSON paginated + search + filter role/status */

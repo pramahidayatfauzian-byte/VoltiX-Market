@@ -62,15 +62,24 @@ test('produk update replaces foto and invalid file rejected', function () {
 });
 
 test('sekolah logo upload works', function () {
+    $sa = TbUser::where('username', 'superadmin1')->first();
     $admin = TbUser::where('username', 'admin1')->first();
 
+    // admin forbidden
     $this->actingAs($admin)->post(route('pengaturan.sekolah', $admin->id_sekolah), [
+        '_method' => 'PUT',
+        'nama_sekolah' => 'SMKN 1 Tasikmalaya',
+        'logo' => UploadedFile::fake()->image('logo.png'),
+    ])->assertForbidden();
+
+    // super admin success
+    $this->actingAs($sa)->post(route('pengaturan.sekolah', $sa->id_sekolah), [
         '_method' => 'PUT',
         'nama_sekolah' => 'SMKN 1 Tasikmalaya',
         'logo' => UploadedFile::fake()->image('logo.png'),
     ])->assertSessionHas('success');
 
-    $logo = \App\Models\Sekolah::find($admin->id_sekolah)->logo;
+    $logo = \App\Models\Sekolah::find($sa->id_sekolah)->logo;
     expect($logo)->not->toBeNull();
     Storage::disk('public')->assertExists($logo);
 });
